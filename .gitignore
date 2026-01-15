@@ -1,14 +1,60 @@
-# Data
-data/raw/*
-data/processed/*
+# =========================
+# Operating System files
+# =========================
+.DS_Store
+Thumbs.db
 
-# Environment
+# =========================
+# Python cache / build
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# =========================
+# Virtual environments
+# =========================
 .env
 venv/
-__pycache__/
+env/
+.venv/
 
-# Jupyter
+# =========================
+# Jupyter Notebook
+# =========================
 .ipynb_checkpoints/
 
-# OS
-.DS_Store
+# =========================
+# Data (ignore files, keep folders)
+# =========================
+data/raw/*.csv
+data/raw/*.json
+data/raw/*.xlsx
+
+data/processed/*.csv
+data/processed/*.json
+
+# =========================
+# Logs
+# =========================
+*.log
+
+# =========================
+# IDE / Editor
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# Do NOT ignore these folders
+# =========================
+!data/
+!data/raw/
+!data/processed/
+!notebooks/
+!reports/
+!presentations/
