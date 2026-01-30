@@ -34,21 +34,19 @@ nyc_schema = StructType([
     StructField("OTHERS_UNITS_ASSIGNED_QUANTITY", IntegerType(), True)
 ])
 
-# 2. Bronze Table with Encoding and Rescue Fixes
+# 2. Define the Bronze Streaming Table
 @dlt.table(
     name="nyc_fire_incidents_bronze",
-    comment = "Raw ingestion with ISO encoding fix and rescued data safety net"
+    comment="Raw ingestion of NYC Fire Incident Dispatch Data"
 )
 def nyc_fire_incidents_bronze():
     return (
         spark.readStream.format("cloudFiles")
         .option("cloudFiles.format", "csv")
         .option("header", "true")
-        # FIXES:
-        .option("encoding", "ISO-8859-1")               # Clears diamond symbols
-        .option("cloudFiles.schemaEvolutionMode", "rescue") # Safety mode
-        .option("rescuedDataColumn", "_rescued_data")   # Audit column for malformed rows
-        # FORMATS:
+        .option("encoding", "ISO-8859-1")
+        .option("cloudFiles.schemaEvolutionMode", "rescue")
+        .option("rescuedDataColumn", "_rescued_data")
         .option("timestampFormat", "MM/dd/yyyy hh:mm:ss a") 
         .schema(nyc_schema)
         .load("/Volumes/workspace/capstone_project/bronze_layer/")
