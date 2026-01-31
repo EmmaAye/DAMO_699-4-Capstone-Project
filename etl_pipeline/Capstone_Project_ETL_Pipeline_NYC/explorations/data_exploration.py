@@ -15,13 +15,13 @@ sys.path.append("/Workspace/capstone_project/Tables/")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Bronze Layer Inspection
+# MAGIC ## 1. Bronze Layer Inspection
 # MAGIC
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Load Bronze Table
+# MAGIC ### 1.1 Load Bronze Table
 
 # COMMAND ----------
 
@@ -45,12 +45,12 @@ print("Rows:", df_bronze.count())
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Basic Profiling Bronze
+# MAGIC ### 1.2 Basic Profiling Bronze
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Check Missing Values
+# MAGIC #### 1.2.1 Check Missing Value 
 
 # COMMAND ----------
 
@@ -83,7 +83,7 @@ display(
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Duplicate Incident ID Check
+# MAGIC #### 1.2.2 Duplicate Incident ID Check
 
 # COMMAND ----------
 
@@ -105,12 +105,12 @@ display(
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Silver Layer (Clean Incident Table Validation)
+# MAGIC ## 2. Silver Layer (Clean Incident Table Validation)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Load and Profile Table
+# MAGIC ### 2.1 Load and Profile Table
 
 # COMMAND ----------
 
@@ -122,7 +122,7 @@ display(df_silver.limit(5))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Check Missing Values
+# MAGIC ### 2.2 Check Missing Values
 
 # COMMAND ----------
 
@@ -170,7 +170,7 @@ display(
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Response Time Sanity Check
+# MAGIC ### 2.3 Response Time Sanity Check
 
 # COMMAND ----------
 
@@ -187,7 +187,7 @@ display(
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Check validity flags
+# MAGIC ### 2.4 Check validity flags
 
 # COMMAND ----------
 
@@ -199,7 +199,7 @@ display(
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Borough distribution
+# MAGIC ### 2.5 Borough distribution
 
 # COMMAND ----------
 
@@ -212,7 +212,7 @@ display(
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Unique incident category inspection (for harmonization)
+# MAGIC ### 2.6 Unique incident category inspection (for harmonization)
 
 # COMMAND ----------
 
@@ -225,7 +225,7 @@ display(
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Gold Layer (Feature Table Check)
+# MAGIC ## 3. Gold Layer (Feature Table Check)
 
 # COMMAND ----------
 
@@ -235,7 +235,7 @@ df_gold = spark.read.table("workspace.capstone_project.nyc_fire_incidents_gold")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### 1. Basic Sanity Check
+# MAGIC ### 3.1 Basic Sanity Check
 
 # COMMAND ----------
 
@@ -249,7 +249,7 @@ df_gold.printSchema()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### 2. Censoring structure (survival readiness)
+# MAGIC ### 3.2 Censoring structure (survival readiness)
 # MAGIC Purpose: verify survival analysis design
 
 # COMMAND ----------
@@ -277,7 +277,7 @@ display(
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### 3. Final missingness check (Gold validation)
+# MAGIC ### 3.3. Final missingness check (Gold validation)
 
 # COMMAND ----------
 
