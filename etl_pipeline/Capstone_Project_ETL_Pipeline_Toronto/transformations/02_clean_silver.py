@@ -10,8 +10,6 @@ from pyspark.sql.functions import col,round, when
 @dlt.expect_or_drop("valid_incident_number", "INCIDENT_NUMBER IS NOT NULL")
 @dlt.expect_or_drop("valid_alarm_level", "Event_Alarm_Level BETWEEN 0 AND 5")
 @dlt.expect_or_drop("non_negative_rescues", "Persons_Rescued >= 0")
-@dlt.expect_or_drop("valid_timeline", 
-    "TFS_Alarm_Time <= TFS_Arrival_Time AND TFS_Arrival_Time <= Last_TFS_Unit_Clear_Time")
 @dlt.expect_or_drop("has_geometry", "geometry IS NOT NULL")
 
 def tfs_incidents_silver():

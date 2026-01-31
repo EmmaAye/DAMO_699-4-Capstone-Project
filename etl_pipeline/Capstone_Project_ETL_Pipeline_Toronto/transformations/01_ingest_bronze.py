@@ -32,5 +32,5 @@ def tfs_incidents_bronze():
         .option("cloudFiles.format", "csv")
         .option("header", "true")
         .schema(tfs_schema)
-        .load("/Volumes/workspace/capstone_project/bronze_layer/")
+        .load("/Volumes/workspace/capstone_project/trt_bronze_layer/")
     )
