@@ -229,7 +229,67 @@ display(
 
 # COMMAND ----------
 
-df_gold = spark.read.table("nyc_incident_summary_gold")
+df_gold = spark.read.table("workspace.capstone_project.nyc_fire_incidents_gold")
+
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### 1. Basic Sanity Check
+
+# COMMAND ----------
 
 print("Gold Row Count:", df_gold.count())
 display(df_gold.limit(10))
+
+# COMMAND ----------
+
+df_gold.printSchema()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### 2. Censoring structure (survival readiness)
+# MAGIC Purpose: verify survival analysis design
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC `event_indicator` is stored as a boolean in the Gold table (`True` = arrival observed, `False` = right-censored). For some survival libraries, it may be cast to 0/1 integers at modeling time without changing its meaning.
+# MAGIC
+
+# COMMAND ----------
+
+display(
+    df_gold.groupBy("event_indicator")
+           .count()
+)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Interpretation:
+# MAGIC
+# MAGIC True → arrival observed
+# MAGIC
+# MAGIC False → right-censored
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC #### 3. Final missingness check (Gold validation)
+
+# COMMAND ----------
+
+n = df_gold.count()
+
+missing = df_gold.select([
+    F.round(
+        (F.sum(F.when(F.col(c).isNull(), 1).otherwise(0)) / F.lit(n) * 100),
+        2   # <-- number of decimal places
+    ).alias(c)
+    for c in df_gold.columns
+])
+display(missing.toPandas().T.reset_index()
+        .rename(columns={"index":"column", 0:"percent_missing"}))
+print("Column Level Missing Count Silver Table:", missing.count())
