@@ -52,4 +52,6 @@ def tfs_incidents_gold():
             .when(col("month_name").isin(["June", "July", "August"]), "Summer")
             .otherwise("Fall")  # September, October, November
         )
+        # Dropping of duplicate columns
+        .drop("TFS_Alarm_Time", "TFS_Arrival_Time", "Last_TFS_Unit_Clear_Time")
     )

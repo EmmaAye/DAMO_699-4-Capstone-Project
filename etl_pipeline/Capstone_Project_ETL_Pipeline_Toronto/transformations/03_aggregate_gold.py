@@ -38,4 +38,7 @@ def tfs_aggregate_gold():
             sum(when(col("Persons_Rescued") > 0, 1).otherwise(0)).alias("incidents_with_rescues"),
             sum(col("Persons_Rescued")).alias("total_persons_rescued")
         )
+
+        # Dropping of duplicate columns
+        .drop("TFS_Alarm_Time", "TFS_Arrival_Time", "Last_TFS_Unit_Clear_Time")
     )

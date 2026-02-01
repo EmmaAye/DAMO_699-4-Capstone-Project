@@ -43,6 +43,11 @@ def tfs_incidents_silver():
             .when(col("response_time_minutes") < 10, "Good (5-10 min)")
             .when(col("response_time_minutes") < 15, "Fair (10-15 min)")
             .otherwise("Poor (>15 min)"))
+       
+        # Dropping of unnecessary columns
         .drop("Ward_At_Event_Dispatch")
+
+        # Dropping duplicate raw columns 
+        .drop("TFS_Alarm_Time", "TFS_Arrival_Time", "Last_TFS_Unit_Clear_Time")    
     )
     return df
