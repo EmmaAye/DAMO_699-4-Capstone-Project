@@ -1,5 +1,5 @@
 import dlt
-from pyspark.sql.functions import col, when, hour, dayofweek, month, count, unix_timestamp, lit
+from pyspark.sql.functions import col, when, hour, dayofweek, month, count, unix_timestamp, lit, round
 from pyspark.sql.window import Window
 
 @dlt.table(
@@ -17,10 +17,10 @@ def nyc_fire_incidents_gold():
         
         # 1. Map and Calculate Base Features
         .withColumn("incident_id", col("STARFIRE_INCIDENT_ID"))
-        .withColumn("response_minutes", col("INCIDENT_RESPONSE_SECONDS_QY") / 60)
+        .withColumn("response_minutes", round(col("INCIDENT_RESPONSE_SECONDS_QY") / 60, 2))
         
         # 2. Survival event indicator: 1 if response time observed else 0
-        .withColumn("event_indicator", when(col("INCIDENT_RESPONSE_SECONDS_QY").isNotNull(), lit(True)).otherwise(lit(False)))
+        .withColumn("event_indicator", when(col("INCIDENT_RESPONSE_SECONDS_QY").isNotNull(), lit(1)).otherwise(lit(0)).cast("int"))
         
         # 3. Extract Time Components
         .withColumn("hour", hour(col("INCIDENT_DATETIME")))
@@ -47,6 +47,7 @@ def nyc_fire_incidents_gold():
             col("day_of_week"),
             col("month"),
             col("season"),
+            col("INCIDENT_CLASSIFICATION").alias("incident_classification"),
             col("INCIDENT_CLASSIFICATION_GROUP").alias("incident_classification_group"),
             col("ALARM_LEVEL_INDEX_DESCRIPTION").alias("alarm_level_index_description"),
             col("ALARM_SOURCE_DESCRIPTION_TX").alias("alarm_source_description_tx"),
