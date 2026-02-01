@@ -224,6 +224,14 @@ display(
 
 # COMMAND ----------
 
+display(
+    df_silver.groupBy("INCIDENT_CLASSIFICATION")
+    .count()
+    .orderBy(F.desc("count"))
+)
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ## 3. Gold Layer (Feature Table Check)
 

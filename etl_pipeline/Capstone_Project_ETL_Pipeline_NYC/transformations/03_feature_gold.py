@@ -47,6 +47,7 @@ def nyc_fire_incidents_gold():
             col("day_of_week"),
             col("month"),
             col("season"),
+            col("INCIDENT_CLASSIFICATION").alias("incident_classification"),
             col("INCIDENT_CLASSIFICATION_GROUP").alias("incident_classification_group"),
             col("ALARM_LEVEL_INDEX_DESCRIPTION").alias("alarm_level_index_description"),
             col("ALARM_SOURCE_DESCRIPTION_TX").alias("alarm_source_description_tx"),
