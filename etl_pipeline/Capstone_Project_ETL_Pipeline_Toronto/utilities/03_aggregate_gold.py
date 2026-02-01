@@ -12,6 +12,15 @@ def tfs_aggregate_gold():
         # 1. Create time-based features
         .withColumn("incident_hour", hour(col("alarm_time")))
         .withColumn("day_of_week", date_format(col("alarm_time"), "EEEE"))
+        .withColumn("day_of_week_num",
+             when(col("day_of_week") == "Sunday", 1)
+            .when(col("day_of_week") == "Monday", 2)
+            .when(col("day_of_week") == "Tuesday", 3)
+            .when(col("day_of_week") == "Wednesday", 4)
+            .when(col("day_of_week") == "Thursday", 5)
+            .when(col("day_of_week") == "Friday", 6)
+            .when(col("day_of_week") == "Saturday", 7)
+        )
         .withColumn("month_name", date_format(col("alarm_time"), "MMMM"))
         .withColumn("is_weekend", 
                     when(date_format(col("alarm_time"), "EEEE").isin(["Saturday", "Sunday"]), True)
