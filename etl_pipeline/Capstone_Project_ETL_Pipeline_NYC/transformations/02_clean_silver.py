@@ -7,8 +7,10 @@ from pyspark.sql.functions import col, when, upper, trim
 )
 @dlt.expect_or_drop("valid_incident_date", "INCIDENT_DATETIME IS NOT NULL")
 @dlt.expect_or_drop("valid_zipcode", "ZIPCODE IS NOT NULL")
-@dlt.expect_or_drop("positive_response_time", "INCIDENT_RESPONSE_SECONDS_QY >= 0")
-@dlt.expect_or_drop("valid_incident_travel_times", "INCIDENT_TRAVEL_TM_SECONDS_QY IS NOT NULL")
+@dlt.expect_or_drop(
+    "positive_response_time",
+    "INCIDENT_RESPONSE_SECONDS_QY IS NULL OR INCIDENT_RESPONSE_SECONDS_QY >= 0"
+)
 @dlt.expect_or_drop("logical_time_flow", "INCIDENT_CLOSE_DATETIME IS NULL OR INCIDENT_CLOSE_DATETIME >= INCIDENT_DATETIME")
 
 def nyc_fire_incidents_silver():

@@ -17,7 +17,7 @@ def nyc_fire_incidents_gold():
         
         # 1. Map and Calculate Base Features
         .withColumn("incident_id", col("STARFIRE_INCIDENT_ID"))
-        .withColumn("response_minutes", round(col("INCIDENT_RESPONSE_SECONDS_QY") / 60, 2))
+        .withColumn("response_minutes", round((col("INCIDENT_RESPONSE_SECONDS_QY") / 60).cast("double"), 2))
         
         # 2. Survival event indicator: 1 if response time observed else 0
         .withColumn("event_indicator", when(col("INCIDENT_RESPONSE_SECONDS_QY").isNotNull(), lit(1)).otherwise(lit(0)).cast("int"))
