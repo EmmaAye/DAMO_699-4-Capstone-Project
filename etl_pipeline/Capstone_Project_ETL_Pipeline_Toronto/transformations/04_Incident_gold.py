@@ -1,7 +1,7 @@
 import dlt
 from pyspark.sql.window import Window
 from pyspark.sql import functions as F
-from pyspark.sql.functions import col, hour, date_format,lit, when
+from pyspark.sql.functions import col, hour, date_format,lit,month, when
 
 @dlt.table(
     name="tfs_incidents_gold",
@@ -33,7 +33,7 @@ def tfs_incidents_gold():
             .when(col("day") == "Friday", 6)
             .when(col("day") == "Saturday", 7)
         )
-        .withColumn("month", date_format(col("alarm_time"), "MMMM"))
+        .withColumn("month", month(col("alarm_time")))
         .withColumn("time_of_day",
             when(col("hour").between(0, 5), "Night (12AM-6AM)")
             .when(col("hour").between(6, 11), "Morning (6AM-12PM)")
@@ -41,7 +41,7 @@ def tfs_incidents_gold():
             .otherwise("Evening (6PM-12AM)")
         )
         .withColumn("is_weekend",
-            when(col("day_of_week").isin(["Saturday", "Sunday"]), True).otherwise(False)
+            when(col("day_of_week").isin([1, 7]), True).otherwise(False)
         )
         .withColumn("calls_past_30m", F.count("*").over(w30) - 1)
         .withColumn("calls_past_60m", F.count("*").over(w60) - 1)
@@ -56,10 +56,10 @@ def tfs_incidents_gold():
             F.when(F.col("calls_past_60m") < 0, 0).otherwise(F.col("calls_past_60m"))
         )
         .withColumn("season",
-             when(col("month").isin(["December", "January", "February"]), "Winter")
-            .when(col("month").isin(["March", "April", "May"]), "Spring")
-            .when(col("month").isin(["June", "July", "August"]), "Summer")
-            .otherwise("Fall")  # September, October, November
+             when(col("month").isin([12, 1, 2]), "Winter")
+             .when(col("month").isin([3, 4, 5]), "Spring")
+             .when(col("month").isin([6, 7, 8]), "Summer")
+             .otherwise("Fall")
         )
         .withColumn(
             "event_indicator",
