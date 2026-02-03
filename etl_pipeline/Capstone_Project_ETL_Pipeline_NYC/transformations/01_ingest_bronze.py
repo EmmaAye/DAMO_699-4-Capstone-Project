@@ -26,7 +26,7 @@ nyc_schema = StructType([
     StructField("FIRST_ON_SCENE_DATETIME", TimestampType(), True),
     StructField("INCIDENT_CLOSE_DATETIME", TimestampType(), True),
     StructField("VALID_DISPATCH_RSPNS_TIME_INDC", StringType(), True),
-    StructField("VALID_INCIDENT_RSPNS_TIME_INDC", StringType(), True),
+    StructField("VALID_INCIDENT_RSPNS_TIME_INDC", IntegerType(), True),
     StructField("INCIDENT_RESPONSE_SECONDS_QY", IntegerType(), True),
     StructField("INCIDENT_TRAVEL_TM_SECONDS_QY", IntegerType(), True),
     StructField("ENGINES_ASSIGNED_QUANTITY", IntegerType(), True),
