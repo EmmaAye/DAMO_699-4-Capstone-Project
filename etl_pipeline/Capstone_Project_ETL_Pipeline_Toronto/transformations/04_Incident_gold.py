@@ -1,38 +1,26 @@
 import dlt
 from pyspark.sql.window import Window
 from pyspark.sql import functions as F
-from pyspark.sql.functions import col, hour, date_format,lit,month, when
+from pyspark.sql.functions import col, hour, date_format,lit,month,dayofweek, when
 
 @dlt.table(
     name="tfs_incidents_gold",
     comment="Incident-level enriched dataset for analytics and ML"
 )
 def tfs_incidents_gold():
-    w30 = (
-        Window
-        .partitionBy("Incident_Station_Area")
-        .orderBy(F.col("alarm_time").cast("long"))
-        .rangeBetween(-30 * 60, 0)
-    )
-    w60 = (
-        Window
-        .partitionBy("Incident_Station_Area")
-        .orderBy(F.col("alarm_time").cast("long"))
-        .rangeBetween(-60 * 60, 0)
-    )
+    w30 = ( Window .partitionBy("Incident_Station_Area") 
+           .orderBy(F.col("alarm_time").cast("long")) 
+           .rangeBetween(-30 * 60, 0) 
+        )
+    w60 = ( Window .partitionBy("Incident_Station_Area")
+           .orderBy(F.col("alarm_time")
+            .cast("long")) 
+           .rangeBetween(-60 * 60, 0) 
+           )
     return (dlt.read("tfs_incidents_silver")
         #.filter(F.col("alarm_time").isNotNull())
         .withColumn("hour", hour(col("alarm_time")))
-        .withColumn("day", date_format(col("alarm_time"), "EEEE"))
-        .withColumn("day_of_week",
-             when(col("day") == "Sunday", 1)
-            .when(col("day") == "Monday", 2)
-            .when(col("day") == "Tuesday", 3)
-            .when(col("day") == "Wednesday", 4)
-            .when(col("day") == "Thursday", 5)
-            .when(col("day") == "Friday", 6)
-            .when(col("day") == "Saturday", 7)
-        )
+        .withColumn("day_of_week", dayofweek(col("alarm_time")))
         .withColumn("month", month(col("alarm_time")))
         .withColumn("time_of_day",
             when(col("hour").between(0, 5), "Night (12AM-6AM)")
@@ -52,9 +40,9 @@ def tfs_incidents_gold():
             F.when(F.col("calls_past_30m") < 0, 0).otherwise(F.col("calls_past_30m"))
         )
         .withColumn(
-            "calls_past_60min",
-            F.when(F.col("calls_past_60m") < 0, 0).otherwise(F.col("calls_past_60m"))
-        )
+        "calls_past_60min",
+        F.when(F.col("calls_past_60m") < 0, 0).otherwise(F.col("calls_past_60m"))
+)
         .withColumn("season",
              when(col("month").isin([12, 1, 2]), "Winter")
              .when(col("month").isin([3, 4, 5]), "Spring")
@@ -67,17 +55,16 @@ def tfs_incidents_gold():
         )
 
         .withColumnRenamed("response_time_minutes", "response_minutes")
-        .withColumnRenamed("_id", "incident_id")
-        # Dropping of duplicate columns
-        .drop("TFS_Alarm_Time", "TFS_Arrival_Time", "Last_TFS_Unit_Clear_Time")
-
+        #.withColumnRenamed("_id", "incident_id")
+        .withColumnRenamed("INCIDENT_NUMBER", "incident_id")
+        .drop("calls_past_30m", "calls_past_60m")
         .select(
             "incident_id",
             "response_minutes",
             "event_indicator",
             "hour",
             "day_of_week",
-            "day",
+            #"day",
             "month",
             "season",
             "Final_Incident_Type",

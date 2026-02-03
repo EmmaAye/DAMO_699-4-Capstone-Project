@@ -1,5 +1,5 @@
 import dlt
-from pyspark.sql.functions import col,round, when
+from pyspark.sql.functions import col,round, when,to_timestamp,coalesce
 
 # SIMPLE SILVER LAYER
 @dlt.table(
@@ -9,18 +9,42 @@ from pyspark.sql.functions import col,round, when
 
 @dlt.expect_or_drop("valid_incident_number", "INCIDENT_NUMBER IS NOT NULL")
 @dlt.expect_or_drop("valid_alarm_level", "Event_Alarm_Level BETWEEN 0 AND 5")
-@dlt.expect_or_drop("non_negative_rescues", "Persons_Rescued >= 0")
+#@dlt.expect_or_drop("non_negative_rescues", "Persons_Rescued >= 0")
 @dlt.expect_or_drop("has_geometry", "geometry IS NOT NULL")
+@dlt.expect_or_drop(
+"non_negative_response_time",
+"response_time_seconds IS NULL OR response_time_seconds >= 0"
+)
+@dlt.expect("alarm_time_parsed", "alarm_time IS NOT NULL")
 
 def tfs_incidents_silver():
+    ts_formats = [
+    "yyyy-MM-dd HH:mm:ss",
+    "yyyy-MM-dd'T'HH:mm:ss",
+    "MM/dd/yyyy HH:mm:ss",
+    "MM/dd/yyyy h:mm a"
+]
     df = (
         dlt.read("tfs_incidents_bronze")
         
         # 1. Simple timestamp conversion
-        .withColumn("alarm_time", col("TFS_Alarm_Time").cast("timestamp"))
-        .withColumn("arrival_time", col("TFS_Arrival_Time").cast("timestamp"))
-        .withColumn("clear_time", col("Last_TFS_Unit_Clear_Time").cast("timestamp"))
-                
+    .withColumn
+    (
+        "alarm_time",
+         coalesce(*[to_timestamp(col("TFS_Alarm_Time"), f) for f in ts_formats]
+        )
+    )
+    .withColumn(
+        "arrival_time",
+         coalesce(*[to_timestamp(col("TFS_Arrival_Time"), f) for f in ts_formats]
+        )
+    )
+    .withColumn(
+        "clear_time",
+        coalesce(
+        *[to_timestamp(col("Last_TFS_Unit_Clear_Time"), f) for f in ts_formats]
+         )
+    )          
         # 7. Remove duplicates
         .dropDuplicates(["INCIDENT_NUMBER", "alarm_time"])
 
