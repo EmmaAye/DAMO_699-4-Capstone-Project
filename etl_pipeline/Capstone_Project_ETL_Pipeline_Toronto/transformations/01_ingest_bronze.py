@@ -30,7 +30,12 @@ def tfs_incidents_bronze():
     return (
         spark.readStream.format("cloudFiles")
         .option("cloudFiles.format", "csv")
+        # Schema location for Auto Loader
+        .option("cloudFiles.schemaLocation", "dbfs:/Volumes/workspace/capstone_project/trt_bronze_layer")
         .option("header", "true")
+        .option("mode", "PERMISSIVE")
+        .option("quote", '"')
+        .option("escape", '"')
         .schema(tfs_schema)
-        .load("/Volumes/workspace/capstone_project/trt_bronze_layer/")
+        .load("dbfs:/Volumes/workspace/capstone_project/trt_bronze_layer/")
     )
