@@ -27,6 +27,8 @@ env/
 # Jupyter Notebook
 # =========================
 .ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
 
 # =========================
 # Data (ignore files, keep folders)
