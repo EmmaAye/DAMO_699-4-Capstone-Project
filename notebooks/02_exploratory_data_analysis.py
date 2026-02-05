@@ -1575,6 +1575,119 @@ nyc_loc_summary = (
 
 display(nyc_loc_summary)
 
+# %%
+pdf = nyc_loc_summary.toPandas()
+
+# reshape for grouped bars
+plot_df = pdf.melt(
+    id_vars="location_area",
+    value_vars=["mean_response", "p90_response"],
+    var_name="metric",
+    value_name="minutes"
+)
+
+plt.figure(figsize=(9,5))
+ax = sns.barplot(
+    data=plot_df,
+    x="location_area",
+    y="minutes",
+    hue="metric"
+)
+
+# Add headroom
+y_max = plot_df["minutes"].max()
+ax.set_ylim(0, y_max * 1.15)
+
+# Grid
+ax.grid(axis="y", linestyle="--", alpha=0.5)
+
+# Smaller tick labels
+ax.tick_params(axis="x", labelsize=8)
+ax.tick_params(axis="y", labelsize=8)
+
+plt.xticks(rotation=45)
+
+plt.title("NYC Mean vs P90 Response Time by Location", fontsize=13, fontweight="bold")
+plt.xlabel("Location Area", fontsize=10)
+plt.ylabel("Response Time (minutes)", fontsize=10)
+
+# Data labels for grouped bars
+for p in ax.patches:
+    height = p.get_height()
+    ax.annotate(
+        f"{height:.2f}",
+        (p.get_x() + p.get_width()/2., height),
+        ha="center",
+        va="bottom",
+        fontsize=7,
+        xytext=(0, 3),
+        textcoords="offset points"
+    )
+
+plt.legend(title="Metric", fontsize=8, title_fontsize=9)
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
+# ##### 4.6.2.2 Mean and P90 Response Time Bar Charts
+
+# %% [markdown]
+# ##### 4.6.2.3 Call Volume Bar Chart
+
+# %%
+pdf = nyc_loc_summary.toPandas()
+
+plt.figure(figsize=(8,5))
+ax = sns.barplot(
+    data=pdf,
+    x="location_area",
+    y="call_volume"
+)
+
+# Grid
+ax.grid(axis="y", linestyle="--", alpha=0.5)
+
+# Smaller ticks
+ax.tick_params(axis="x", labelsize=8)
+ax.tick_params(axis="y", labelsize=8)
+
+plt.xticks(rotation=45)
+
+plt.title("NYC Incident Volume by Location", fontsize=13, fontweight="bold")
+plt.xlabel("Location Area", fontsize=10)
+plt.ylabel("Incident Count", fontsize=10)
+
+# Headroom
+y_max = pdf["call_volume"].max()
+ax.set_ylim(0, y_max * 1.15)
+
+# Data labels
+for p in ax.patches:
+    ax.annotate(
+        f"{int(p.get_height())}",
+        (p.get_x() + p.get_width()/2., p.get_height()),
+        ha="center",
+        va="bottom",
+        fontsize=8,
+        xytext=(0, 3),
+        textcoords="offset points"
+    )
+
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
+# ##### Summary of NYC Spatial Patterns and Demand–Performance Comparison
+#
+# Spatial analysis of NYC incident data reveals clear variation in response-time performance and incident volume across boroughs. Brooklyn and Manhattan account for the highest incident volumes, with approximately 421,772 and 374,377 incidents respectively, followed by the Bronx and Queens. Richmond/Staten Island has substantially lower call volume (68,814), reflecting its smaller population and geographic scale.
+#
+# Despite these differences in workload, response-time patterns do not strictly follow call volume. The Bronx exhibits the highest mean response time (6.46 minutes) and the highest P90 response time (9.45 minutes), indicating comparatively greater tail-delay risk. Manhattan and Queens show moderately high mean response times and elevated P90 values (8.97 and 8.57 minutes respectively), suggesting that peak-period delays occur even in high-capacity urban areas. In contrast, Brooklyn records the highest incident volume but one of the lowest mean response times (5.30 minutes) and relatively lower tail-delay risk (P90 = 7.80 minutes). Richmond/Staten Island, while lower in demand, shows slightly faster average response performance overall.
+#
+# Short-term demand indicators (calls in the past 30 and 60 minutes) are relatively consistent across boroughs, suggesting that baseline demand intensity is broadly similar despite differences in total volume. Alarm-level averages are also highly stable across locations, indicating that incident severity distribution does not vary substantially by borough.
+#
+# Overall, these findings suggest that higher call volume does not always correspond to slower response performance. Some high-demand boroughs maintain relatively efficient response times, while others experience elevated tail delays. This highlights the importance of examining both average and tail-response metrics when evaluating operational risk. The NYC spatial analysis complements the Toronto clustering results by providing a descriptive comparison of demand and response characteristics across boroughs without applying clustering to a dataset with limited spatial granularity.
+#
+
 # %% [markdown]
 # ### 4.7 Composite Tail-Risk Prioritization Score
 #
