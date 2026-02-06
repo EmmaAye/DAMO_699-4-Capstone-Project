@@ -18,6 +18,14 @@ def nyc_fire_incidents_gold():
         # 1. Map and Calculate Base Features
         .withColumn("incident_id", col("STARFIRE_INCIDENT_ID"))
         .withColumn("response_minutes", round((col("INCIDENT_RESPONSE_SECONDS_QY") / 60).cast("double"), 2))
+        # Delay indicator (8-minute threshold)
+        .withColumn(
+            "delay_indicator",
+            when(col("response_minutes").isNull(), lit(None))
+            .when(col("response_minutes") > lit(8.0), lit(1))
+            .otherwise(lit(0))
+            .cast("int")
+        )
         
         # 2. Survival event indicator: 1 if response time observed else 0
         .withColumn("event_indicator", when(col("INCIDENT_RESPONSE_SECONDS_QY").isNotNull(), lit(1)).otherwise(lit(0)).cast("int"))
@@ -42,6 +50,7 @@ def nyc_fire_incidents_gold():
         .select(
             col("incident_id"),
             col("response_minutes"),
+            col("delay_indicator"),
             col("event_indicator"),
             col("hour"),
             col("day_of_week"),

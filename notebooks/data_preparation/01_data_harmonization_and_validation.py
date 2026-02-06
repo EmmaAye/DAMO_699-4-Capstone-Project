@@ -1077,6 +1077,7 @@ toronto_model_df = (
         # --- IDs & targets ---
         "incident_id",
         "response_minutes",
+        "delay_indicator",
         "event_indicator",
 
         # --- temporal ---
@@ -1139,6 +1140,7 @@ nyc_model_df = (
         # --- IDs & targets ---
         "incident_id",
         "response_minutes",
+        "delay_indicator",
         "event_indicator",
 
         # --- temporal ---

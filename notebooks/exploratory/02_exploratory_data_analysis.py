@@ -174,19 +174,33 @@ display(nyc_dupes.orderBy(F.desc("count")).limit(20))
 
 # %% [markdown]
 # ## 2. Target Variable Exploration
-# (Assuming response time or delay-based target)
+# *(Response time and delay-based targets)*
 #
-# - Distribution (histogram / KDE)
-# - Summary stats (mean, median, P90, P95)
-# - Skewness & outliers
-# - % of incidents breaching SLA thresholds (e.g. > X minutes)
+# This study uses two complementary target representations:
 #
-# Distributions and summary statistics below use completed incidents only
-# i.e. response_minutes IS NOT NULL.
-# <br>Censored cases are handled separately in survival analysis
+# - **Continuous target:** `response_minutes` (time from alarm to first-unit arrival, in minutes)
+# - **Binary delay target:** `delay_indicator` (1 if `response_minutes` > **8 minutes**, else 0)
+#
+# The continuous target supports distributional, tail-risk, and survival-based analysis, while the binary delay target supports classification-based delay-risk modeling.
+#
+# **Scope and data handling**
+# - **Distributional plots and summary statistics** (histogram/KDE, mean/median/P90/P95, skewness, outliers) are computed using **completed incidents only**, where `response_minutes IS NOT NULL`.
+# - **SLA breach rates** (e.g., % of incidents exceeding 5 or 8 minutes) are also reported using **completed incidents only** to reflect observed response-time performance.
+# - **Delay indicator exploration** (count and % delayed) is computed on rows where `delay_indicator` is defined; if `response_minutes` is missing, `delay_indicator` is treated as **NULL** and excluded from delay-rate calculation.
+# - **Censored incidents** (missing `response_minutes`) are retained in the model-ready tables and are handled explicitly in **survival analysis** using `event_indicator`.
+#
+# **Analyses included in this section**
+# - Distribution of `response_minutes` (Histogram / KDE)
+# - Summary statistics (Mean, Median, P90, P95)
+# - Skewness and outlier diagnostics (IQR-based; outliers are retained)
+# - Service-level threshold breach rates (e.g., > 5 minutes, > 8 minutes)
+# - Delay indicator prevalence (delayed count and percentage by city)
+#
 
 # %% [markdown]
 # ### 2.1 Define Completed Incidents Subsets
+# Distributional and summary-statistic analyses of response time are conducted using **completed incidents only**, where `response_minutes IS NOT NULL`.  
+# Incidents without an observed response time are retained and treated as censored observations for survival analysis.
 
 # %%
 toronto_complete = toronto_df.filter(F.col("response_minutes").isNotNull())
@@ -197,7 +211,14 @@ print("Toronto completed:", toronto_complete.count(), "/", toronto_df.count())
 print("NYC completed:", nyc_complete.count(), "/", nyc_df.count())
 
 # %% [markdown]
-# ### 2.2 Distribution: Histogram (KDE)
+# ### 2.2 Response Time Analysis
+# This section examines the distribution and variability of the continuous response-time target.
+
+# %% [markdown]
+# #### 2.2.1 Response Time Distribution (Completed Incidents Only)
+#
+# Response-time distributions are visualized using histograms and kernel density estimates (KDE) based on completed incidents only.  
+# These plots characterize the overall shape of response-time behavior and highlight the presence of tail delays.
 
 # %%
 toronto_pd = toronto_complete.select("response_minutes").sample(fraction=0.2, seed=42).toPandas()
@@ -235,7 +256,12 @@ plt.show()
 # Overall, these distributions reinforce that response time behavior in both cities is dominated by tail risk, motivating the use of percentile-based metrics, outlier analysis, and survival-based modeling rather than reliance on mean response times alone.
 
 # %% [markdown]
-# ### 2.3 Summary Statistics (Mean, Median, P90, P95)
+# #### 2.2.2 Summary Statistics (Mean, Median, P90, P95)
+#
+# Summary statistics are computed for the continuous response-time variable (`response_minutes`) using **completed incidents only** (i.e., where `response_minutes IS NOT NULL`). These statistics describe central tendency and tail behavior in response-time performance across Toronto and New York City.
+#
+# Mean, median, P90, and P95 statistics are computed for completed incidents.  
+# While mean and median describe typical response performance, high-percentile metrics capture extreme delays and operational risk in the upper tail of the distribution.
 
 # %% [markdown]
 # Helper Function
@@ -285,10 +311,21 @@ display(summary_df)
 # The divergence between median and high-percentile response times indicates that a relatively small fraction of delayed incidents disproportionately influences overall performance. The higher P90 and P95 values observed in NYC align with its greater skewness, higher outlier prevalence, and elevated SLA breach rates, underscoring more pronounced tail risk compared to Toronto.
 
 # %% [markdown]
-# ### 2.4 Skewness & Outliers
+# #### 2.2.3 Skewness & Outliers
+#
+# Skewness and outlier analysis are conducted on the continuous response-time variable (`response_minutes`) using completed incidents only. These diagnostics assess the degree of asymmetry and the presence of extreme delays in response-time distributions across Toronto and New York City.
+#
+# Both cities exhibit **positive skewness**, indicating that while most incidents are handled within a typical response window, a smaller subset experiences substantially longer delays. This right-skewed structure is characteristic of emergency response systems, where extreme delays are infrequent but operationally significant.
+#
+# Outliers are identified using the interquartile range (IQR) method as a diagnostic tool rather than as a basis for data removal. Incidents exceeding the upper outlier threshold represent genuine extreme delays and are retained for analysis, as they reflect meaningful operational conditions such as demand surges, congestion, or resource constraints.
+#
+# Because the delay indicator is derived from response time using a fixed threshold, skewness and outlier diagnostics are performed on the continuous response-time variable only. The binary delay indicator is analyzed separately through prevalence and threshold-breach metrics.
+#
+# Overall, the presence of strong right-skewness and a non-trivial share of extreme delays reinforces the importance of tail-sensitive metrics and motivates modeling approaches that explicitly account for delay risk rather than relying solely on average response times.
+#
 
 # %% [markdown]
-# #### 2.4.1 Skewness
+# ##### 2.2.3.1 Skewness
 
 # %%
 # Compute skewness values
@@ -312,6 +349,7 @@ skewness_df = skewness_df.withColumn(
 
 display(skewness_df)
 
+
 # %% [markdown]
 # **Skewness of Response Time Distributions**
 #
@@ -320,11 +358,29 @@ display(skewness_df)
 # Despite NYC exhibiting higher mean and high-percentile response times, Toronto’s stronger skewness indicates that its distribution is more sharply peaked with rarer but more extreme delay events. Together with the outlier and SLA breach analyses, these results demonstrate that response-time performance in both cities is driven by tail behavior rather than average outcomes.
 
 # %% [markdown]
-# #### 2.4.2 Outlier Inspection (IQR-based, diagnostic only)
+# ##### 2.2.3.2 Outlier Inspection (IQR-based, diagnostic only)
 
 # %%
 # Function to compute outlier bounds
 
+def outlier_bounds(df):
+    """
+    Computes IQR bounds for response_minutes
+    using completed incidents only.
+    """
+    stats = df.selectExpr(
+        "percentile_approx(response_minutes, 0.25) as q1",
+        "percentile_approx(response_minutes, 0.75) as q3"
+    ).first()
+
+    q1 = stats["q1"]
+    q3 = stats["q3"]
+    iqr = q3 - q1
+
+    lower = q1 - 1.5 * iqr
+    upper = q3 + 1.5 * iqr
+
+    return q1, q3, lower, upper
 
 def outlier_profile(df):
     # bounds from your existing function
@@ -391,10 +447,13 @@ display(outlier_full_df)
 # **Note: Do not remove outliers — long delays are operationally meaningful**.
 
 # %% [markdown]
-# ### 2.5 Service Level Agreement(SLA) Breach Analysis
-# SLA breach analysis measures the share of incidents for which response times exceed selected time thresholds. These thresholds represent practical performance benchmarks rather than strict policy guarantees. 
+# #### 2.2.4 Service Level Agreement (SLA) Breach Analysis
 #
-# By examining breach rates, the analysis highlights delayed responses that are masked by average response times and provides a clearer view of operational risk during high-demand or constrained conditions.
+# SLA breach analysis evaluates the share of **completed incidents** whose response times exceed selected time thresholds. These thresholds represent practical performance benchmarks rather than strict policy guarantees and are used to assess service-level reliability.
+#
+# This analysis is conducted using the continuous response-time variable (`response_minutes`) for completed incidents only (i.e., where `response_minutes IS NOT NULL`). By measuring the proportion of incidents exceeding specified thresholds (e.g., 5 and 8 minutes), SLA breach rates provide a threshold-based view of performance that complements distributional and percentile metrics.
+#
+# While summary statistics describe typical response performance, breach rates highlight delayed responses that are masked by averages and reveal operational risk under high-demand or constrained conditions. Because the binary delay indicator is derived directly from the 8-minute threshold, SLA breach analysis provides the continuous-response context needed to interpret delay prevalence and supports subsequent predictive modeling of delay risk.
 #
 #
 
@@ -467,7 +526,114 @@ display(sla_pivot_df)
 # Across both thresholds, NYC consistently exhibits higher breach rates, suggesting greater tail risk in response times. These findings reinforce earlier evidence from skewness and outlier analyses that average response times mask meaningful operational delays, and that tail-sensitive metrics are essential for evaluating emergency response performance.
 
 # %% [markdown]
-# ### 2.6 Censoring Awareness (For Survival Analysis)
+# ### 2.3 Delay Indicator Analysis
+#
+# To support predictive modeling of response-time delays, a binary delay indicator is used.  
+# An incident is classified as **delayed** if the response time exceeds **8 minutes**.
+#
+# This section summarizes:
+# - number of delayed incidents  
+# - percentage of delayed incidents  
+# - comparison across cities  
+#
+# This provides an overview of class balance and establishes the modeling target.
+
+# %% [markdown]
+# #### 2.3.1 Delay Prevalence
+#
+# The number and percentage of delayed incidents are computed for each city.  
+# This provides an overview of class balance and establishes the modeling target distribution.
+
+# %% [markdown]
+# Count and Percentage of Delay Incidents
+
+# %%
+# Add city labels for comparison
+toronto_delay = toronto_df.withColumn("city", F.lit("Toronto"))
+nyc_delay     = nyc_df.withColumn("city", F.lit("NYC"))
+
+combined_delay = toronto_delay.unionByName(nyc_delay)
+
+delay_summary = (
+    combined_delay
+    .groupBy("city")
+    .agg(
+        F.count("*").alias("total_incidents"),
+        F.sum("delay_indicator").alias("delayed_incidents"),
+        F.round(F.mean("delay_indicator") * 100, 2).alias("delay_percent")
+    )
+    .orderBy("city")
+)
+
+display(delay_summary)
+
+# %% [markdown]
+# Overall(Bot cities combined)
+
+# %%
+combined_delay.select(
+    F.count("*").alias("total_incidents"),
+    F.sum("delay_indicator").alias("delayed_incidents"),
+    F.round(F.mean("delay_indicator") * 100, 2).alias("delay_percent")
+).show()
+
+# %%
+delay_pd = delay_summary.toPandas()
+
+plt.figure(figsize=(6,4))
+ax = sns.barplot(
+    data=delay_pd,
+    x="city",
+    y="delay_percent"
+)
+
+# Grid
+ax.grid(axis="y", linestyle="--", alpha=0.5)
+
+# Smaller ticks
+ax.tick_params(axis="x", labelsize=8)
+ax.tick_params(axis="y", labelsize=8)
+
+plt.xticks(rotation=45)
+
+plt.title("Percentage of Incidents Exceeding 8-Minute Threshold", fontsize=13, fontweight="bold")
+plt.xlabel("City", fontsize=10)
+plt.ylabel("Delay %", fontsize=10)
+
+# Headroom
+y_max = delay_pd["delay_percent"].max()
+ax.set_ylim(0, y_max * 1.15)
+
+# for i, v in enumerate(delay_pd["delay_percent"]):
+#     ax.text(i, v, f"{v:.2f}%")
+# Data labels
+for p in ax.patches:
+    height = p.get_height()
+    ax.annotate(
+        f"{height:.2f}%",                     # show percent
+        (p.get_x() + p.get_width()/2., height),
+        ha="center",
+        va="bottom",
+        fontsize=9,
+        xytext=(0, 3),
+        textcoords="offset points"
+    )
+
+
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
+# #### 2.3.2 Summary of Delay Indicator Analysis
+#
+# Delay prevalence differs meaningfully between the two cities. Using an 8-minute response-time threshold, **13.99% of incidents in New York City** exceed the delay threshold, compared with **8.03% in Toronto**. Across the combined dataset, approximately **12.51% of all incidents** exceed the 8-minute benchmark.
+#
+# These results indicate that while the majority of incidents in both cities meet the selected service threshold, delayed responses occur with non-trivial frequency, particularly in NYC. The higher delay rate observed in NYC is consistent with earlier distributional and tail-risk analyses showing broader response-time dispersion and heavier upper-tail behavior relative to Toronto.
+#
+# The delay indicator provides a threshold-based view of operational reliability that complements continuous response-time metrics such as P90. Because the delay rate remains below 20% in both cities, the resulting class balance is suitable for predictive modeling of delay risk without requiring extreme rebalancing techniques. This variable is therefore used as the primary target for classification-based predictive models in subsequent analysis.
+
+# %% [markdown]
+# ### 2.4 Censoring Awareness (For Survival Analysis)
 # Censoring Validation
 
 # %%
@@ -513,7 +679,7 @@ display(censoring_summary.select(
 # Accounting for censoring is therefore essential for valid cross-city comparison and for avoiding bias that would arise from analyzing completed incidents alone, particularly in the NYC dataset.
 
 # %% [markdown]
-# ### 2.7 Summary of Target Variable Exploration
+# ### 2.5 Summary of Target Variable Exploration
 #
 # Exploratory analysis of the response time target reveals strongly right-skewed distributions in both Toronto and New York City, with long tails driven by a minority of substantially delayed incidents. Mean response times exceed median values, and high-percentile metrics (P90 and P95) indicate pronounced tail risk that is not captured by average performance measures alone. Outlier and SLA breach analyses further confirm that delayed responses are operationally meaningful and occur with non-trivial frequency in both cities, particularly in NYC.
 #
@@ -893,11 +1059,122 @@ plt.show()
 #
 
 # %% [markdown]
-# ### 3.6 Summary of Temporal Patterns
-# Temporal analysis reveals strong diurnal and weekly structure in emergency response performance across both cities. Response times and incident volumes vary systematically by hour of day, with slower responses occurring during overnight and early-morning periods and higher volumes during daytime and evening hours. Weekend response times are slightly lower than weekday levels, consistent with reduced traffic and demand, and this pattern is observed uniformly across both average and high-percentile metrics.
+# ### 3.7 Exploratory Delay Rate by Hour
 #
-# Overall, temporal variation influences response performance across the entire distribution, highlighting the importance of accounting for time-of-day and day-of-week effects in subsequent modeling and risk analysis.
+# To complement response-time and volume analysis, the share of incidents exceeding the 8-minute threshold was examined across hours of the day. Delay rates broadly follow the same temporal structure observed in response-time percentiles, with elevated delay prevalence during overnight and early-morning hours. NYC exhibits consistently higher delay rates across most hours, reflecting greater tail-delay exposure. These exploratory patterns motivate formal modeling of temporal delay drivers in subsequent analysis sections.
+
+# %% [markdown]
+# #### 3.6.1 Toronto
+
+# %%
+tor_delay = (
+    toronto_df
+    .filter(F.col("delay_indicator").isNotNull())
+    .groupBy("hour")
+    .agg(F.round(F.mean("delay_indicator")*100,2).alias("delay_pct"))
+    .withColumn("city", F.lit("Toronto"))
+    .orderBy(F.col("hour").asc())
+)
+display(tor_delay)
+
+# %%
+# Convert to pandas (already sorted by hour)
+delay_pd = tor_delay.toPandas()
+
+plt.figure(figsize=(10,5))
+
+ax = sns.barplot(
+    data=delay_pd,
+    x="hour",
+    y="delay_pct"
+)
+
+ax.set_title("Toronto: Delay Rate by Hour of Day (>8 minutes)", fontsize=13, fontweight="bold")
+ax.set_xlabel("Hour of Day")
+ax.set_ylabel("Delayed Incidents (%)")
+
+# show every hour
+ax.set_xticks(range(0,24))
+
+# grid
+ax.grid(axis="y", linestyle="--", alpha=0.5)
+
+# ---- labels on bars ----
+for p in ax.patches:
+    height = p.get_height()
+    ax.annotate(
+        f"{height:.1f}",
+        (p.get_x() + p.get_width()/2., height),
+        ha="center",
+        va="bottom",
+        fontsize=8,
+        xytext=(0,2),
+        textcoords="offset points"
+    )
+
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
+# #### 3.6.2 NYC
+
+# %%
+nyc_delay = (
+    nyc_df
+    .filter(F.col("delay_indicator").isNotNull())
+    .groupBy("hour")
+    .agg(F.round(F.mean("delay_indicator")*100,2).alias("delay_pct"))
+    .withColumn("city", F.lit("NYC"))
+    .orderBy(F.col("hour").asc())
+)
+display(nyc_delay)
+
+# %%
+# Convert to pandas (already sorted by hour)
+delay_pd = nyc_delay.toPandas()
+
+plt.figure(figsize=(10,5))
+
+ax = sns.barplot(
+    data=delay_pd,
+    x="hour",
+    y="delay_pct"
+)
+
+ax.set_title("NYC: Delay Rate by Hour of Day (>8 minutes)", fontsize=13, fontweight="bold")
+ax.set_xlabel("Hour of Day")
+ax.set_ylabel("Delayed Incidents (%)")
+
+# show every hour
+ax.set_xticks(range(0,24))
+
+# grid
+ax.grid(axis="y", linestyle="--", alpha=0.5)
+
+# ---- labels on bars ----
+for p in ax.patches:
+    height = p.get_height()
+    ax.annotate(
+        f"{height:.1f}",
+        (p.get_x() + p.get_width()/2., height),
+        ha="center",
+        va="bottom",
+        fontsize=8,
+        xytext=(0,2),
+        textcoords="offset points"
+    )
+
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
+# ### 3.7 Summary of Temporal Patterns
 #
+# Temporal analysis shows clear daily and weekly patterns in emergency response performance across both cities. Response times and incident volumes vary by hour of day, with slower responses and higher delay risk during overnight and early-morning periods and higher call volumes during daytime and evening hours. Weekend response times are slightly lower than weekday levels, likely reflecting reduced traffic and demand.
+#
+# Exploratory delay-rate patterns follow the same trend. Both cities experience higher delay percentages overnight, and NYC shows consistently higher delay rates across most hours compared to Toronto. These patterns align with earlier P90 response-time results, indicating that time of day affects both typical response times and the likelihood of delays.
+#
+# Overall, time-of-day and day-of-week patterns play an important role in response performance. These findings support including temporal factors in later predictive and survival analyses of delay risk.
 
 # %% [markdown]
 # ## 4. Spatial/ Operational Signals
