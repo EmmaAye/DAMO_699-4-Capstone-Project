@@ -53,14 +53,23 @@ def tfs_incidents_gold():
             "event_indicator",
             when(col("response_time_minutes").isNotNull(), lit(1)).otherwise(lit(0)).cast("int")
         )
-
+        # Rename to match NYC schema
         .withColumnRenamed("response_time_minutes", "response_minutes")
         #.withColumnRenamed("_id", "incident_id")
         .withColumnRenamed("INCIDENT_NUMBER", "incident_id")
+        # ADD: Delay indicator (8-minute threshold)
+        .withColumn(
+            "delay_indicator",
+            when(col("response_minutes").isNull(), lit(None))
+            .when(col("response_minutes") > lit(8.0), lit(1))
+            .otherwise(lit(0))
+            .cast("int")
+        )
         .drop("calls_past_30m", "calls_past_60m")
         .select(
             "incident_id",
             "response_minutes",
+            "delay_indicator",
             "event_indicator",
             "hour",
             "day_of_week",
