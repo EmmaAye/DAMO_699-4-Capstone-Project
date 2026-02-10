@@ -82,6 +82,28 @@ toronto_gold_feat = toronto_gold
 nyc_gold_feat     = nyc_gold
 
 
+# %%
+print("NYC years")
+display(nyc_gold_feat.select("year").distinct().orderBy("year"))
+print("Toronto years")
+display(toronto_gold_feat.select("year").distinct().orderBy("year"))
+
+# %% [markdown]
+# #### Filter NYC Data For Year 2023, 2024 to match Toronto Data
+
+# %%
+nyc_gold_feat = nyc_gold_feat.filter(F.col("year").isin(2023, 2024))
+
+# %%
+print("NYC years")
+display(nyc_gold_feat.select("year").distinct().orderBy("year"))
+
+# %%
+print("NYC Filtered Gold count:", nyc_gold_feat.count())
+
+# %%
+print("Toronto Gold count:", toronto_gold_feat.count())
+
 # %% [markdown]
 # ## 2. Incident Type Harmonization
 #
@@ -1076,6 +1098,7 @@ toronto_model_df = (
     .select(
         # --- IDs & targets ---
         "incident_id",
+        "incident_datetime",
         "response_minutes",
         "delay_indicator",
         "event_indicator",
@@ -1085,6 +1108,7 @@ toronto_model_df = (
         "day_of_week",
         "month",
         "season",
+        "year",
 
         # --- categorical ---
         "incident_category",
@@ -1139,6 +1163,7 @@ nyc_model_df = (
     .select(
         # --- IDs & targets ---
         "incident_id",
+        "incident_datetime",
         "response_minutes",
         "delay_indicator",
         "event_indicator",
@@ -1148,6 +1173,7 @@ nyc_model_df = (
         "day_of_week",
         "month",
         "season",
+        "year",
 
         # --- categorical ---
         "incident_category",
@@ -1324,12 +1350,14 @@ nyc_df     = spark.table("workspace.capstone_project.nyc_model_ready")
 # Columns to keep in the unified dataset (explicit = safer)
 common_cols = [
     "incident_id",
+    "incident_datetime",
     "response_minutes",
     "event_indicator",
     "hour",
     "day_of_week",
     "month",
     "season",
+    "year",
     "incident_category",
     "unified_alarm_level",
     "unified_call_source",

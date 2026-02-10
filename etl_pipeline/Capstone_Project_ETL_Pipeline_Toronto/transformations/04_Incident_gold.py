@@ -1,7 +1,7 @@
 import dlt
 from pyspark.sql.window import Window
 from pyspark.sql import functions as F
-from pyspark.sql.functions import col, hour, date_format,lit,month,dayofweek, when
+from pyspark.sql.functions import col, hour,year, date_format,lit,month,dayofweek, when
 
 @dlt.table(
     name="tfs_incidents_gold",
@@ -17,11 +17,15 @@ def tfs_incidents_gold():
             .cast("long")) 
            .rangeBetween(-60 * 60, 0) 
            )
-    return (dlt.read("tfs_incidents_silver")
+    return (
+        dlt.read("tfs_incidents_silver")
         #.filter(F.col("alarm_time").isNotNull())
         .withColumn("hour", hour(col("alarm_time")))
         .withColumn("day_of_week", dayofweek(col("alarm_time")))
         .withColumn("month", month(col("alarm_time")))
+        # keep timestamp + year (like NYC)
+        .withColumn("incident_datetime", col("alarm_time"))
+        .withColumn("year", year(col("alarm_time")))
         .withColumn("time_of_day",
             when(col("hour").between(0, 5), "Night (12AM-6AM)")
             .when(col("hour").between(6, 11), "Morning (6AM-12PM)")
@@ -68,6 +72,7 @@ def tfs_incidents_gold():
         .drop("calls_past_30m", "calls_past_60m")
         .select(
             "incident_id",
+            "incident_datetime",  #added
             "response_minutes",
             "delay_indicator",
             "event_indicator",
@@ -76,6 +81,7 @@ def tfs_incidents_gold():
             #"day",
             "month",
             "season",
+            "year",
             "Final_Incident_Type",
             "Event_Alarm_Level",
             "Call_Source",
