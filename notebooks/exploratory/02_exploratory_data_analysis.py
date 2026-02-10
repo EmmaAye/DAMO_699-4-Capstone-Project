@@ -95,11 +95,21 @@ nyc_df.printSchema()
 # %%
 set(toronto_df.columns) - set(nyc_df.columns), set(nyc_df.columns) - set(toronto_df.columns)
 
-
 # %% [markdown]
 # **Schema Consistency Check**
 #
 # A comparison of column names across the Toronto and New York City datasets shows no differences in schema. Both datasets contain identical sets of analytical features, confirming that the data harmonization process successfully aligned the structure of the two datasets and enables direct cross-city comparison.
+
+# %%
+toronto_years = toronto_df.select(F.countDistinct("year").alias("n_years"))
+nyc_years = nyc_df.select(F.countDistinct("year").alias("n_years"))
+
+print("Toronto years:")
+display(toronto_years)
+
+print("NYC years:")
+display(nyc_years)
+
 
 # %% [markdown]
 # ### 1.4 Missing Value per Column
@@ -972,16 +982,30 @@ nyc_weekend_stats = (
     .groupBy("is_weekend")
     .agg(
         F.round(F.mean("response_minutes"), 2).alias("avg_response"),
+        F.round(F.expr("percentile_approx(response_minutes, 0.5)"), 2).alias("median_response"),
         F.round(F.expr("percentile_approx(response_minutes, 0.9)"), 2).alias("p90_response")
     )
     .withColumn("city", F.lit("NYC"))
+)
+
+# Toronto (make sure yours matches this structure)
+toronto_weekend_stats = (
+    toronto_wd
+    .filter(F.col("response_minutes").isNotNull())
+    .groupBy("is_weekend")
+    .agg(
+        F.round(F.mean("response_minutes"), 2).alias("avg_response"),
+        F.round(F.expr("percentile_approx(response_minutes, 0.5)"), 2).alias("median_response"),
+        F.round(F.expr("percentile_approx(response_minutes, 0.9)"), 2).alias("p90_response")
+    )
+    .withColumn("city", F.lit("Toronto"))
 )
 
 # Combine
 weekend_comparison = (
     toronto_weekend_stats
     .unionByName(nyc_weekend_stats)
-    .select("city", "is_weekend", "avg_response", "p90_response")
+    .select("city", "is_weekend", "avg_response", "median_response", "p90_response")
     .orderBy("city", "is_weekend")
 )
 
@@ -1049,6 +1073,7 @@ ax.legend(
 plt.tight_layout()
 plt.show()
 
+
 # %% [markdown]
 # **Weekday vs Weekend Response-Time Comparison**
 #
@@ -1059,12 +1084,72 @@ plt.show()
 #
 
 # %% [markdown]
-# ### 3.7 Exploratory Delay Rate by Hour
+# ### 3.7 Seasonal Response Time Analysis
+# This section evaluates whether emergency response performance varies by season, which can inform staffing and operational readiness planning.
+#
+# We compare response-time performance across seasons using:
+# - Average response time (mean)
+# - Median response time (P50)
+# - Tail performance (P90)
+#
+# Results are reported for both Toronto and NYC to support cross-city benchmarking of seasonal patterns.
+#
+#
+
+# %% [markdown]
+# #### 3.7.1 Seasonal statistics
+
+# %%
+def seasonal_stats(df, city_name):
+    return (
+        df.filter(F.col("response_minutes").isNotNull())
+          .groupBy("season")
+          .agg(
+              F.round(F.mean("response_minutes"), 2).alias("avg_response"),
+              F.round(F.expr("percentile_approx(response_minutes, 0.5)"), 2).alias("median_response"),
+              F.round(F.expr("percentile_approx(response_minutes, 0.9)"), 2).alias("p90_response"),
+              F.count("*").alias("n_incidents")
+          )
+          .withColumn("city", F.lit(city_name))
+    )
+
+toronto_season_stats = seasonal_stats(toronto_df, "Toronto")
+nyc_season_stats = seasonal_stats(nyc_df, "NYC")
+
+season_comparison = (
+    toronto_season_stats
+    .unionByName(nyc_season_stats)
+    .select("city", "season", "n_incidents", "avg_response", "median_response", "p90_response")
+)
+
+# order seasons in a logical order (Spring, Summer, Fall, Winter)
+season_clean = season_comparison.withColumn(
+    "season",
+    F.initcap("season")
+)
+season_ordered = season_clean.withColumn(
+    "season_order",
+    F.when(F.col("season") == "Spring", 1)
+     .when(F.col("season") == "Summer", 2)
+     .when(F.col("season") == "Fall", 3)
+     .when(F.col("season") == "Winter", 4)
+)
+season_final = (
+    season_ordered
+    .orderBy("city", "season_order")
+    .drop("season_order")
+)
+
+display(season_final)
+
+
+# %% [markdown]
+# ### 3.8 Exploratory Delay Rate by Hour
 #
 # To complement response-time and volume analysis, the share of incidents exceeding the 8-minute threshold was examined across hours of the day. Delay rates broadly follow the same temporal structure observed in response-time percentiles, with elevated delay prevalence during overnight and early-morning hours. NYC exhibits consistently higher delay rates across most hours, reflecting greater tail-delay exposure. These exploratory patterns motivate formal modeling of temporal delay drivers in subsequent analysis sections.
 
 # %% [markdown]
-# #### 3.6.1 Toronto
+# #### 3.8.1 Toronto
 
 # %%
 tor_delay = (
@@ -1116,7 +1201,7 @@ plt.tight_layout()
 plt.show()
 
 # %% [markdown]
-# #### 3.6.2 NYC
+# #### 3.8.2 NYC
 
 # %%
 nyc_delay = (
@@ -1168,7 +1253,7 @@ plt.tight_layout()
 plt.show()
 
 # %% [markdown]
-# ### 3.7 Summary of Temporal Patterns
+# ### 3.9 Summary of Temporal Patterns
 #
 # Temporal analysis shows clear daily and weekly patterns in emergency response performance across both cities. Response times and incident volumes vary by hour of day, with slower responses and higher delay risk during overnight and early-morning periods and higher call volumes during daytime and evening hours. Weekend response times are slightly lower than weekday levels, likely reflecting reduced traffic and demand.
 #

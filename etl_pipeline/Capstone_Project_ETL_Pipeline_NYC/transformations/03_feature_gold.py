@@ -1,5 +1,5 @@
 import dlt
-from pyspark.sql.functions import col, when, hour, dayofweek, month, count, unix_timestamp, lit, round
+from pyspark.sql.functions import col, when, hour, year, dayofweek, month, count, unix_timestamp, lit, round
 from pyspark.sql.window import Window
 
 @dlt.table(
@@ -8,6 +8,7 @@ from pyspark.sql.window import Window
 )
 # Ensuring data quality for the final features
 def nyc_fire_incidents_gold():
+    
     # Citywide demand (remove partitionBy for system load)
     window_30 = Window.orderBy(unix_timestamp("INCIDENT_DATETIME")).rangeBetween(-1800, -1)
     window_60 = Window.orderBy(unix_timestamp("INCIDENT_DATETIME")).rangeBetween(-3600, -1)
@@ -46,9 +47,13 @@ def nyc_fire_incidents_gold():
         .withColumn("calls_past_30min", count("*").over(window_30))
         .withColumn("calls_past_60min", count("*").over(window_60))
         
+        # 6. Add Year Columns
+        .withColumn("year", year(col("INCIDENT_DATETIME")))
+
         # 6. Select and Lowercase all final columns
         .select(
             col("incident_id"),
+            col("INCIDENT_DATETIME").alias("incident_datetime"),  # keep timestamp
             col("response_minutes"),
             col("delay_indicator"),
             col("event_indicator"),
@@ -56,6 +61,7 @@ def nyc_fire_incidents_gold():
             col("day_of_week"),
             col("month"),
             col("season"),
+            col("year"),
             col("INCIDENT_CLASSIFICATION").alias("incident_classification"),
             col("INCIDENT_CLASSIFICATION_GROUP").alias("incident_classification_group"),
             col("ALARM_LEVEL_INDEX_DESCRIPTION").alias("alarm_level_index_description"),
