@@ -101,14 +101,12 @@ set(toronto_df.columns) - set(nyc_df.columns), set(nyc_df.columns) - set(toronto
 # A comparison of column names across the Toronto and New York City datasets shows no differences in schema. Both datasets contain identical sets of analytical features, confirming that the data harmonization process successfully aligned the structure of the two datasets and enables direct cross-city comparison.
 
 # %%
-toronto_years = toronto_df.select(F.countDistinct("year").alias("n_years"))
-nyc_years = nyc_df.select(F.countDistinct("year").alias("n_years"))
-
 print("Toronto years:")
-display(toronto_years)
+display(toronto_df.select("year").distinct())
 
+# %%
 print("NYC years:")
-display(nyc_years)
+display(nyc_df.select("year").distinct())
 
 
 # %% [markdown]
@@ -127,7 +125,7 @@ def missing_table(df):
     total = df.count()
     m = missing_value_summary(df).toPandas().T.reset_index()
     m.columns = ["column_name", "missing_count"]
-    m["missing_pct"] = m["missing_count"] / total * 100
+    m["missing_pct"] = (m["missing_count"] / total * 100).round(2)
     return m.sort_values("missing_count", ascending=False)
 
 display(missing_table(toronto_df))
@@ -1113,6 +1111,8 @@ def seasonal_stats(df, city_name):
           .withColumn("city", F.lit(city_name))
     )
 
+
+# %%
 toronto_season_stats = seasonal_stats(toronto_df, "Toronto")
 nyc_season_stats = seasonal_stats(nyc_df, "NYC")
 
@@ -1142,6 +1142,99 @@ season_final = (
 
 display(season_final)
 
+
+# %% [markdown]
+# #### 3.7.2 Average Response Time by Season Plot
+
+# %%
+pdf_season = season_final.toPandas()
+
+plt.figure(figsize=(8,5))
+ax = sns.barplot(data=pdf_season, x="season", y="avg_response", hue="city")
+
+# Add data labels
+for p in ax.patches:
+    height = p.get_height()
+    ax.annotate(f"{height:.2f}",
+                (p.get_x() + p.get_width()/2, height),
+                ha="center", va="bottom",
+                fontsize=9,
+                xytext=(0,3),
+                textcoords="offset points")
+
+plt.title("Average Response Time by Season")
+plt.xlabel("Season")
+plt.ylabel("Average Response Time (minutes)")
+
+# Legend outside
+plt.legend(title="City", bbox_to_anchor=(1.02,1), loc="upper left")
+
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
+# #### 3.7.2 P90 Response Time by Season
+
+# %%
+plt.figure(figsize=(8,5))
+ax = sns.barplot(data=pdf_season, x="season", y="p90_response", hue="city")
+
+# Data labels
+for p in ax.patches:
+    height = p.get_height()
+    ax.annotate(f"{height:.2f}",
+                (p.get_x() + p.get_width()/2, height),
+                ha="center", va="bottom",
+                fontsize=9,
+                xytext=(0,3),
+                textcoords="offset points")
+
+plt.title("P90 Response Time by Season (Tail Performance)")
+plt.xlabel("Season")
+plt.ylabel("P90 Response Time (minutes)")
+
+plt.legend(title="City", bbox_to_anchor=(1.02,1), loc="upper left")
+
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
+# #### 3.7.3 Response Time Distribution by Season
+
+# %%
+combined = (
+    toronto_df.select("season", "response_minutes").withColumn("city", F.lit("Toronto"))
+    .unionByName(nyc_df.select("season", "response_minutes").withColumn("city", F.lit("NYC")))
+    .filter(F.col("response_minutes").isNotNull())
+    .withColumn("season", F.initcap("season"))  # <-- FIX
+    .sample(False, 0.05, seed=42)
+)
+
+box_pdf = combined.toPandas()
+
+season_cat = ["Spring", "Summer", "Fall", "Winter"]
+box_pdf["season"] = pd.Categorical(box_pdf["season"], categories=season_cat, ordered=True)
+
+plt.figure(figsize=(9, 5))
+sns.boxplot(data=box_pdf, x="season", y="response_minutes", hue="city", showfliers=False)
+plt.title("Response Time Distribution by Season")
+plt.xlabel("Season")
+plt.ylabel("Response Time (minutes)")
+plt.legend(title="City", bbox_to_anchor=(1.02, 1), loc="upper left")  # optional: legend outside
+plt.tight_layout()
+plt.show()
+
+
+
+# %% [markdown]
+# #### Summary of Seasonal Response-Time Patterns
+#
+# Response times are broadly stable across seasons in both cities, with only modest variation. NYC consistently records higher response times than Toronto in all seasons, for both average and P90 metrics.
+#
+# Summer shows slightly higher average and tail (P90) response times in both cities, suggesting mild demand-related pressure during warmer months. Spring and fall are marginally faster, while winter does not show a strong deterioration in performance.
+#
+# Overall, seasonality appears to be a secondary driver of delay risk. Structural and operational differences between cities have a larger impact on response-time performance than seasonal variation alone.
+#
 
 # %% [markdown]
 # ### 3.8 Exploratory Delay Rate by Hour
