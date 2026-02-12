@@ -101,14 +101,12 @@ set(toronto_df.columns) - set(nyc_df.columns), set(nyc_df.columns) - set(toronto
 # A comparison of column names across the Toronto and New York City datasets shows no differences in schema. Both datasets contain identical sets of analytical features, confirming that the data harmonization process successfully aligned the structure of the two datasets and enables direct cross-city comparison.
 
 # %%
-toronto_years = toronto_df.select(F.countDistinct("year").alias("n_years"))
-nyc_years = nyc_df.select(F.countDistinct("year").alias("n_years"))
-
 print("Toronto years:")
-display(toronto_years)
+display(toronto_df.select("year").distinct())
 
+# %%
 print("NYC years:")
-display(nyc_years)
+display(nyc_df.select("year").distinct())
 
 
 # %% [markdown]
@@ -127,7 +125,7 @@ def missing_table(df):
     total = df.count()
     m = missing_value_summary(df).toPandas().T.reset_index()
     m.columns = ["column_name", "missing_count"]
-    m["missing_pct"] = m["missing_count"] / total * 100
+    m["missing_pct"] = (m["missing_count"] / total * 100).round(2)
     return m.sort_values("missing_count", ascending=False)
 
 display(missing_table(toronto_df))
@@ -171,7 +169,7 @@ display(nyc_dupes.orderBy(F.desc("count")).limit(20))
 # All feature variables are fully populated in both datasets. Missing values are observed only in the target variable `response_minutes`:
 #
 # - **Toronto:** 12,469 missing values (3.45%)
-# - **New York City:** 422,625 missing values (28.49%)
+# - **New York City:** 372,544 missing values (29.03%)
 #
 # The higher proportion of missing response times in the NYC dataset reflects a substantial number of incidents without an observed response completion time, while Toronto exhibits a much smaller fraction of such cases. These missing values are retained intentionally and are interpreted as censored observations, enabling subsequent survival analysis.
 #
@@ -257,13 +255,12 @@ plt.show()
 # %% [markdown]
 # **Response Time Distributions (Completed Incidents)**
 #
-# The response time distributions for both Toronto and New York City are strongly right-skewed, indicating that while most incidents are handled within a relatively short time window, a non-trivial fraction experience substantially longer delays.
+# Both Toronto and NYC show right-skewed response time distributions, meaning most incidents are handled quickly with a smaller number of longer delays.
 #
-# Toronto’s distribution exhibits a pronounced peak around the central response range, followed by a long and heavy right tail. This aligns with the high skewness value observed earlier and reflects the presence of extreme delayed responses that are not captured by average response times.
+# - **Toronto:** Most responses fall around 4–8 minutes, but the longer right tail indicates more extreme delay cases and higher variability.
+# - **NYC:** Response times are tightly concentrated around 3–7 minutes, with fewer extreme delays and more consistent performance.
 #
-# NYC shows a similarly right-skewed pattern but with a broader spread and a longer tail extending to higher response times. Compared to Toronto, NYC displays greater dispersion and a higher frequency of longer delays, consistent with its higher SLA breach rates and outlier prevalence.
-#
-# Overall, these distributions reinforce that response time behavior in both cities is dominated by tail risk, motivating the use of percentile-based metrics, outlier analysis, and survival-based modeling rather than reliance on mean response times alone.
+# Overall, central response times are similar, but Toronto shows greater tail-delay risk, highlighting the importance of examining high-percentile metrics (e.g., P90) in addition to averages.
 
 # %% [markdown]
 # #### 2.2.2 Summary Statistics (Mean, Median, P90, P95)
@@ -316,9 +313,11 @@ display(summary_df)
 # %% [markdown]
 # **Response Time Summary Statistics (Completed Incidents)**
 #
-# Summary statistics further highlight the right-skewed nature of response-time distributions in both cities. In Toronto, the mean response time (5.33 minutes) exceeds the median (5.10 minutes), with high-percentile values reaching 7.67 minutes at P90 and 8.80 minutes at P95. New York City exhibits consistently higher values across all metrics, with a mean of 5.88 minutes, a median of 5.50 minutes, and substantially higher tail percentiles (P90 = 8.68 minutes, P95 = 10.22 minutes).
+# Toronto and NYC have similar central response times, with medians around 5–5.5 minutes.  
+# Toronto performs slightly better overall, showing lower mean and tail metrics (P90 and P95), indicating fewer extreme delays.  
 #
-# The divergence between median and high-percentile response times indicates that a relatively small fraction of delayed incidents disproportionately influences overall performance. The higher P90 and P95 values observed in NYC align with its greater skewness, higher outlier prevalence, and elevated SLA breach rates, underscoring more pronounced tail risk compared to Toronto.
+# NYC has a slightly higher average and noticeably higher P90/P95 values, suggesting greater variability and more frequent longer response times.  
+# Overall, while typical response performance is comparable, NYC exhibits higher tail-delay risk than Toronto.
 
 # %% [markdown]
 # #### 2.2.3 Skewness & Outliers
@@ -363,9 +362,10 @@ display(skewness_df)
 # %% [markdown]
 # **Skewness of Response Time Distributions**
 #
-# Both cities exhibit positively skewed response-time distributions, confirming the presence of long right tails. Toronto shows markedly higher skewness (4.78), indicating a heavier concentration of extreme delayed responses relative to its central tendency. New York City displays more moderate skewness (1.27), suggesting less extreme but still asymmetric response-time behavior.
+# Both cities show positive skewness, meaning most response times are short with a tail of longer delays.  
+# Toronto has much higher skewness (4.78) than NYC (1.28), indicating a heavier right tail and more extreme delay outliers.  
 #
-# Despite NYC exhibiting higher mean and high-percentile response times, Toronto’s stronger skewness indicates that its distribution is more sharply peaked with rarer but more extreme delay events. Together with the outlier and SLA breach analyses, these results demonstrate that response-time performance in both cities is driven by tail behavior rather than average outcomes.
+# This suggests Toronto’s typical response times are similar to NYC’s, but it experiences more occasional long delays, increasing tail-risk variability.
 
 # %% [markdown]
 # ##### 2.2.3.2 Outlier Inspection (IQR-based, diagnostic only)
@@ -444,15 +444,12 @@ display(outlier_full_df)
 # %% [markdown]
 # **Outlier Analysis (IQR Method, Completed Incidents)**
 #
-# Outlier thresholds were defined using the interquartile range (IQR) method. Both Toronto and NYC exhibit a small but non-negligible proportion of response times exceeding the upper outlier bound, reflecting heavy right-tailed delay behavior.
+# Both cities have a similar proportion of outliers (about 4–4.3%), indicating that extreme response times are present but not dominant in the data.
 #
-# - **Toronto:**  
-#   The upper outlier threshold is 9.58 minutes. Approximately 11,249 incidents exceed this threshold, representing 4.07% of completed incidents. Lower-bound outliers are rare and likely reflect minor timestamp irregularities rather than meaningful early responses.
+# Toronto has fewer total incidents but a higher share of upper outliers relative to its dataset size, with most outliers occurring on the high-delay side.  
+# NYC has a much larger dataset and a higher number of upper outliers overall, reflecting more frequent long-delay cases in absolute terms.
 #
-# - **New York City:**  
-#   The upper outlier threshold is higher at 10.68 minutes, with 43,467 incidents classified as upper outliers (4.20%). Similar to Toronto, lower-bound outliers are minimal.
-#
-# Despite differences in absolute thresholds and incident volume, both cities show a comparable proportion of extreme delays. These results reinforce the presence of substantial tail risk in emergency response times and motivate the use of tail-sensitive metrics and censor-aware modeling rather than reliance on average response times alone.
+# In both cities, the majority of outliers are upper-bound (long response times), reinforcing that operational risk is driven mainly by occasional extended delays rather than unusually fast responses.
 #
 # **Note: Do not remove outliers — long delays are operationally meaningful**.
 
@@ -528,12 +525,85 @@ display(sla_pivot_df)
 # %% [markdown]
 # **SLA Breach Results**
 #
-# SLA breach analysis reveals substantial differences in response-time reliability between Toronto and New York City. Using benchmark thresholds of 5 and 8 minutes, both cities exhibit high breach rates at stricter thresholds, indicating that delayed responses are common rather than exceptional.
+# NYC shows a higher proportion of incidents exceeding key response thresholds compared to Toronto.  
+# About 61% of NYC responses exceed 5 minutes and 14% exceed 8 minutes, while Toronto records lower breach rates at roughly 52% over 5 minutes and 8% over 8 minutes.
 #
-# - At the **5-minute threshold**, approximately **61.05%** of NYC incidents exceed the benchmark, compared to **52.25%** in Toronto.
-# - At the **8-minute threshold**, breach rates drop substantially but remain non-trivial, with **13.99%** of NYC incidents and **8.03%** of Toronto incidents exceeding this level.
+# This indicates that although typical response times are similar between the two cities, NYC experiences more frequent SLA breaches and greater tail-delay pressure, suggesting higher operational risk at stricter service thresholds.
+
+# %% [markdown]
+# #### 2.2.5 Threshold Risk Analysis (Service-Level Exceedance)
 #
-# Across both thresholds, NYC consistently exhibits higher breach rates, suggesting greater tail risk in response times. These findings reinforce earlier evidence from skewness and outlier analyses that average response times mask meaningful operational delays, and that tail-sensitive metrics are essential for evaluating emergency response performance.
+# To support operational risk assessment, we compute the probability that response times exceed key service thresholds.  
+# These thresholds represent service-level expectations and help quantify delay risk.
+#
+# We evaluate exceedance probabilities at:
+# - **8 minutes** — official service-level delay threshold used in modeling
+# - **10 minutes** — severe-delay threshold to assess tail-risk conditions
+#
+# Outputs:
+# - Exceedance probability by city
+# - Risk comparison tables
+# - Visualization-ready summaries
+#
+
+# %% [markdown]
+# Threshold Exceedance Analysis
+
+# %%
+thresholds = [8, 10]
+
+def compute_threshold_risk(df, city_name):
+    total = df.filter(F.col("response_minutes").isNotNull()).count()
+    rows = []
+
+    for t in thresholds:
+        exceed = df.filter(F.col("response_minutes") > t).count()
+        prob = round(exceed / total * 100, 2)
+        rows.append((city_name, t, exceed, total, prob))
+
+    return spark.createDataFrame(
+        rows,
+        ["city","threshold_min","n_exceed","n_total","exceed_prob_%"]
+    )
+
+toronto_risk = compute_threshold_risk(toronto_df, "Toronto")
+nyc_risk = compute_threshold_risk(nyc_df, "NYC")
+
+threshold_risk_df = toronto_risk.unionByName(nyc_risk)
+display(threshold_risk_df)
+
+
+# %%
+risk_pdf = threshold_risk_df.toPandas()
+
+plt.figure(figsize=(7,5))
+sns.barplot(data=risk_pdf, x="threshold_min", y="exceed_prob_%", hue="city")
+
+plt.title("Probability of Exceeding Response-Time Thresholds",fontsize=13, fontweight="bold")
+plt.xlabel("Threshold (minutes)", fontsize=11)
+plt.ylabel("Exceedance Probability (%)", fontsize=11)
+
+for p in plt.gca().patches:
+    h = p.get_height()
+    plt.gca().annotate(f"{h:.1f}%",
+        (p.get_x()+p.get_width()/2, h),
+        ha="center", va="bottom", fontsize=9)
+
+plt.legend(title="City", bbox_to_anchor=(1.02,1), loc="upper left")
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
+# ##### Threshold Risk Summary
+#
+# The probability of exceeding service-level thresholds is consistently higher in NYC than in Toronto.  
+# At the 8-minute benchmark, about **14.1%** of NYC incidents exceed the target compared with **8.0%** in Toronto, indicating a greater likelihood of moderate delays in NYC.
+#
+# At the more severe 10-minute threshold, exceedance rates decline in both cities but remain higher in NYC (**5.6%**) than in Toronto (**2.6%**).  
+# This suggests that while most incidents meet expected response times, NYC faces a higher level of tail-delay risk.
+#
+# Overall, differences between cities are most visible in the upper tail of the distribution, reinforcing the importance of threshold- and percentile-based metrics rather than relying solely on average response times.
+#
 
 # %% [markdown]
 # ### 2.3 Delay Indicator Analysis
@@ -601,14 +671,14 @@ ax = sns.barplot(
 ax.grid(axis="y", linestyle="--", alpha=0.5)
 
 # Smaller ticks
-ax.tick_params(axis="x", labelsize=8)
-ax.tick_params(axis="y", labelsize=8)
+ax.tick_params(axis="x", labelsize=9)
+ax.tick_params(axis="y", labelsize=9)
 
 plt.xticks(rotation=45)
 
 plt.title("Percentage of Incidents Exceeding 8-Minute Threshold", fontsize=13, fontweight="bold")
-plt.xlabel("City", fontsize=10)
-plt.ylabel("Delay %", fontsize=10)
+plt.xlabel("City", fontsize=11)
+plt.ylabel("Delay %", fontsize=11)
 
 # Headroom
 y_max = delay_pd["delay_percent"].max()
@@ -634,13 +704,13 @@ plt.tight_layout()
 plt.show()
 
 # %% [markdown]
-# #### 2.3.2 Summary of Delay Indicator Analysis
+# #### 2.3.2 Delay Indicator Analysis (8-Minute Threshold)
 #
-# Delay prevalence differs meaningfully between the two cities. Using an 8-minute response-time threshold, **13.99% of incidents in New York City** exceed the delay threshold, compared with **8.03% in Toronto**. Across the combined dataset, approximately **12.51% of all incidents** exceed the 8-minute benchmark.
+# NYC has a higher proportion of incidents exceeding the 8-minute threshold compared to Toronto.  
+# About 14.13% of NYC incidents are delayed beyond 8 minutes (128,689 cases), while Toronto records 8.03% (28,046 cases).
 #
-# These results indicate that while the majority of incidents in both cities meet the selected service threshold, delayed responses occur with non-trivial frequency, particularly in NYC. The higher delay rate observed in NYC is consistent with earlier distributional and tail-risk analyses showing broader response-time dispersion and heavier upper-tail behavior relative to Toronto.
-#
-# The delay indicator provides a threshold-based view of operational reliability that complements continuous response-time metrics such as P90. Because the delay rate remains below 20% in both cities, the resulting class balance is suitable for predictive modeling of delay risk without requiring extreme rebalancing techniques. This variable is therefore used as the primary target for classification-based predictive models in subsequent analysis.
+# Although NYC has a larger total volume of incidents, the higher delay percentage indicates greater pressure on response performance and more frequent threshold breaches.  
+# Overall, Toronto demonstrates stronger adherence to the 8-minute service target, while NYC shows higher operational delay risk at this threshold.
 
 # %% [markdown]
 # ### 2.4 Censoring Awareness (For Survival Analysis)
@@ -682,21 +752,17 @@ display(censoring_summary.select(
 # %% [markdown]
 # **Censoring Summary**
 #
-# The censoring structure differs substantially between Toronto and New York City. In Toronto, 12,469 incidents (3.45%) are censored, indicating that the vast majority of incidents have an observed response completion time. In contrast, NYC exhibits a much higher degree of censoring, with 422,625 incidents (28.49%) lacking an observed response time.
+# Toronto has a very low censoring rate, with about 3.45% of incidents not reaching a completed response time.  
+# In contrast, NYC shows a much higher censoring rate at 29.03%, meaning a large share of incidents do not have finalized response times in the dataset.
 #
-# This divergence reflects structural and operational differences in data recording and incident resolution across the two cities. For descriptive and distributional analyses, only completed incidents were used to ensure accurate characterization of observed response-time behavior. However, censored incidents are intentionally retained in the model-ready datasets and explicitly modeled using the `event_indicator` variable in subsequent survival analysis.
-#
-# Accounting for censoring is therefore essential for valid cross-city comparison and for avoiding bias that would arise from analyzing completed incidents alone, particularly in the NYC dataset.
+# This suggests Toronto’s data is more complete and directly comparable for response-time analysis, while NYC’s higher censoring may reflect ongoing incidents, data recording differences, or operational complexities that should be considered when interpreting comparative results.
 
 # %% [markdown]
 # ### 2.5 Summary of Target Variable Exploration
 #
-# Exploratory analysis of the response time target reveals strongly right-skewed distributions in both Toronto and New York City, with long tails driven by a minority of substantially delayed incidents. Mean response times exceed median values, and high-percentile metrics (P90 and P95) indicate pronounced tail risk that is not captured by average performance measures alone. Outlier and SLA breach analyses further confirm that delayed responses are operationally meaningful and occur with non-trivial frequency in both cities, particularly in NYC.
+# Exploratory analysis of response times shows right-skewed distributions in both Toronto and NYC, with most incidents handled quickly but a minority experiencing longer delays. Mean values exceed medians, and higher-percentile metrics (P90/P95) highlight tail-risk that averages alone do not capture. SLA and outlier analyses confirm that extended delays occur with meaningful frequency in both cities, with NYC showing higher rates of threshold breaches and long-delay cases.
 #
-# Censoring is an important feature of the data, with a small proportion of censored incidents in Toronto (3.45%) and a substantially larger share in NYC (28.49%). To ensure valid interpretation, distributional analyses were conducted using completed incidents only, while censored cases are retained for subsequent survival-based modeling. Together, these findings motivate the use of tail-sensitive and censor-aware analytical approaches in the modeling stages that follow.
-
-# %% [markdown]
-#
+# Censoring is also present in the data. Toronto has a low censoring rate (3.45%), while NYC’s is substantially higher (29.03%). To maintain valid comparisons, distributional analyses were conducted on completed incidents only, while censored cases are retained for survival-based modeling. Overall, the target variable exhibits skewness, tail-risk, and censoring effects that justify the use of tail-sensitive and censor-aware methods in subsequent modeling stages.
 
 # %% [markdown]
 # ## 3. Temporal Patterns
@@ -831,9 +897,12 @@ display(p90_pivot)
 # %% [markdown]
 # #### Hourly Response-Time Patterns Summary
 #
-# Hourly analysis reveals clear diurnal patterns in both cities. Average response times are lowest during daytime and evening hours and increase during late-night and early-morning periods, with NYC consistently exhibiting higher average response times than Toronto across all hours. While average differences are modest (approximately 0.3–0.6 minutes), tail behavior differs more substantially.
+# Both cities show relatively stable average response times throughout the day, with modest variation by hour. Toronto maintains slightly lower average response times overall, particularly during daytime and evening hours, while NYC shows higher averages during overnight and early-morning periods (approximately 1–7 AM).
 #
-# P90 response times show pronounced overnight and early-morning delays, particularly in NYC, where the slowest 10% of responses exceed Toronto’s P90 by more than one minute during several off-peak hours. These patterns indicate that response-time risk is driven less by typical daytime operations and more by reduced overnight capacity and elevated tail delays, especially in NYC.
+# P90 patterns reveal clearer differences in tail risk. NYC consistently records higher P90 values across nearly all hours, with the largest gaps occurring in early-morning periods when delays are most pronounced. Toronto’s P90 remains more stable and lower throughout the day, indicating fewer extreme delays.
+#
+# Overall, while typical response times are broadly comparable, NYC experiences greater hourly variability and higher tail-delay pressure, especially overnight, whereas Toronto demonstrates more consistent performance across the daily cycle.
+#
 #
 
 # %% [markdown]
@@ -882,9 +951,11 @@ display(hourly_volume_pivot)
 # %% [markdown]
 # **Incident Volume by Hour Summary**
 #
-# Incident volume exhibits a strong diurnal pattern in both Toronto and New York City. Call volumes are lowest during late-night and early-morning hours (approximately 02:00–05:00) and increase steadily throughout the day, peaking during late afternoon and early evening. NYC consistently experiences substantially higher incident volumes than Toronto at every hour, often by a factor of three to four.
+# Both cities show clear daily demand cycles, with lower incident volumes overnight and steady increases beginning in the morning. Volumes rise sharply from around 7–9 AM, peak in the afternoon and early evening (approximately 14:00–19:00), and then gradually decline into the night.
 #
-# The temporal alignment between peak incident volume and elevated response-time levels suggests that demand intensity is an important driver of response-time variation. However, the presence of higher response-time tail risk during overnight hours—despite lower call volumes—indicates that capacity constraints and staffing availability likely play a more significant role during off-peak periods.
+# NYC consistently handles a much higher number of incidents per hour than Toronto across the entire day, reflecting its larger operational scale. Despite this higher volume, peak demand periods in both cities follow similar timing patterns, suggesting comparable urban activity cycles.
+#
+# These hourly demand trends provide important context for interpreting response-time patterns and highlight the need to consider staffing and resource allocation during afternoon and early evening peak periods.
 #
 
 # %% [markdown]
@@ -944,9 +1015,12 @@ plt.show()
 # %% [markdown]
 # **Hour × Day-of-Week Response-Time Patterns**
 #
-# The heatmaps reveal clear and consistent temporal structure in both cities. Average response times are highest during overnight and early-morning hours (approximately 00:00–06:00) across most days of the week, with gradual improvement during daytime hours. Toronto exhibits relatively stable response times throughout the week, with modest weekday–weekend variation.
+# Both cities show consistent temporal patterns across the week. Response times tend to be higher during overnight and early-morning hours (roughly 1–7 AM) and improve during daytime and evening periods. This pattern is visible across most days of the week, suggesting that time-of-day effects are stronger than day-of-week differences.
 #
-# In contrast, NYC shows uniformly higher response times across all hours, with more pronounced overnight delays and less recovery during daytime periods. The persistence of elevated response times during low-demand overnight hours suggests that capacity constraints, staffing levels, or operational coverage—rather than demand alone—play a key role in shaping response-time performance, particularly in NYC.
+# NYC generally records higher response times across nearly all hour–day combinations, with the most pronounced delays occurring in early-morning periods. Toronto shows more stable and slightly lower response times overall, with less extreme variation across the weekly cycle.
+#
+# Overall, temporal patterns are broadly similar between the two cities, but NYC experiences consistently higher delays and greater overnight pressure, while Toronto maintains more stable performance throughout the week.
+#
 #
 
 # %% [markdown]
@@ -1024,10 +1098,12 @@ ax = sns.barplot(
     hue="city"
 )
 
-ax.set_title("P90 Response Time: Weekday vs Weekend", fontsize=12)
-ax.set_xlabel("Day Type")
-ax.set_ylabel("P90 Response Time (minutes)")
-
+ax.set_title("P90 Response Time: Weekday vs Weekend", fontsize=13, fontweight="bold")
+ax.set_xlabel("Day Type", fontsize=11)
+ax.set_ylabel("P90 Response Time (minutes)", fontsize=11)
+# Smaller ticks
+ax.tick_params(axis="x", labelsize=10)
+ax.tick_params(axis="y", labelsize=10)
 # Add value labels on bars
 for container in ax.containers:
     ax.bar_label(container, fmt="%.2f", padding=0.5)
@@ -1054,9 +1130,12 @@ ax = sns.barplot(
     hue="city"
 )
 
-ax.set_title("Average Response Time: Weekday vs Weekend", fontsize=12)
-ax.set_xlabel("Day Type")
-ax.set_ylabel("Average Response Time (minutes)")
+ax.set_title("Average Response Time: Weekday vs Weekend", fontsize=13, fontweight="bold")
+ax.set_xlabel("Day Type", fontsize=11)
+ax.set_ylabel("Average Response Time (minutes)", fontsize = 11)
+# Smaller ticks
+ax.tick_params(axis="x", labelsize=10)
+ax.tick_params(axis="y", labelsize=10)
 
 # Add value labels on bars
 for container in ax.containers:
@@ -1077,9 +1156,10 @@ plt.show()
 # %% [markdown]
 # **Weekday vs Weekend Response-Time Comparison**
 #
-# Both Toronto and New York City exhibit slightly lower average response times on weekends compared to weekdays, consistent with reduced traffic congestion and lower overall incident demand during non-working days. This improvement is reflected not only in average response times but also in high-percentile (P90) values, indicating that weekend conditions influence response performance broadly across the distribution.
+# Response-time differences between weekdays and weekends are modest in both cities.  
+# NYC shows slightly faster performance on weekends, with lower average, median, and P90 response times compared to weekdays. Toronto follows a similar pattern, with marginally lower response times on weekends across all metrics.
 #
-# The gap between average and P90 response times in both cities reflects a right-skewed response-time distribution, where a small proportion of incidents experience substantially longer delays. However, the similarity in weekday–weekend patterns across both metrics suggests that weekend effects do not disproportionately alter extreme response delays, but instead provide modest, uniform improvements across typical and slower response cases.
+# Despite these small improvements, the overall weekday–weekend gap is minimal, suggesting that time-of-day and demand patterns likely have a stronger influence on response performance than day type alone. Across both periods, Toronto maintains consistently lower average and tail response times than NYC.
 #
 #
 
@@ -1113,6 +1193,8 @@ def seasonal_stats(df, city_name):
           .withColumn("city", F.lit(city_name))
     )
 
+
+# %%
 toronto_season_stats = seasonal_stats(toronto_df, "Toronto")
 nyc_season_stats = seasonal_stats(nyc_df, "NYC")
 
@@ -1142,6 +1224,104 @@ season_final = (
 
 display(season_final)
 
+
+# %% [markdown]
+# #### 3.7.2 Average Response Time by Season Plot
+
+# %%
+pdf_season = season_final.toPandas()
+
+plt.figure(figsize=(8,5))
+ax = sns.barplot(data=pdf_season, x="season", y="avg_response", hue="city")
+
+# Add data labels
+for p in ax.patches:
+    height = p.get_height()
+    ax.annotate(f"{height:.2f}",
+                (p.get_x() + p.get_width()/2, height),
+                ha="center", va="bottom",
+                fontsize=9,
+                xytext=(0,3),
+                textcoords="offset points")
+
+plt.title("Average Response Time by Season", fontsize=13, fontweight="bold")
+plt.xlabel("Season", fontsize=11)
+plt.ylabel("Average Response Time (minutes)", fontsize=11)
+# Smaller ticks
+ax.tick_params(axis="x", labelsize=10)
+ax.tick_params(axis="y", labelsize=10)
+# Legend outside
+plt.legend(title="City", bbox_to_anchor=(1.02,1), loc="upper left")
+
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
+# #### 3.7.2 P90 Response Time by Season
+
+# %%
+plt.figure(figsize=(8,5))
+ax = sns.barplot(data=pdf_season, x="season", y="p90_response", hue="city")
+
+# Data labels
+for p in ax.patches:
+    height = p.get_height()
+    ax.annotate(f"{height:.2f}",
+                (p.get_x() + p.get_width()/2, height),
+                ha="center", va="bottom",
+                fontsize=9,
+                xytext=(0,3),
+                textcoords="offset points")
+
+plt.title("P90 Response Time by Season (Tail Performance)", fontsize=13, fontweight="bold")
+plt.xlabel("Season", fontsize=11)
+plt.ylabel("P90 Response Time (minutes)", fontsize =11)
+# Smaller ticks
+ax.tick_params(axis="x", labelsize=10)
+ax.tick_params(axis="y", labelsize=10)
+
+plt.legend(title="City", bbox_to_anchor=(1.02,1), loc="upper left")
+
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
+# #### 3.7.3 Response Time Distribution by Season
+
+# %%
+combined = (
+    toronto_df.select("season", "response_minutes").withColumn("city", F.lit("Toronto"))
+    .unionByName(nyc_df.select("season", "response_minutes").withColumn("city", F.lit("NYC")))
+    .filter(F.col("response_minutes").isNotNull())
+    .withColumn("season", F.initcap("season"))  # <-- FIX
+    .sample(False, 0.05, seed=42)
+)
+
+box_pdf = combined.toPandas()
+
+season_cat = ["Spring", "Summer", "Fall", "Winter"]
+box_pdf["season"] = pd.Categorical(box_pdf["season"], categories=season_cat, ordered=True)
+
+plt.figure(figsize=(9, 5))
+sns.boxplot(data=box_pdf, x="season", y="response_minutes", hue="city", showfliers=False)
+plt.title("Response Time Distribution by Season", fontsize=13, fontweight="bold")
+plt.xlabel("Season", fontsize=11, fontweight="bold")
+plt.ylabel("Response Time (minutes)", fontsize = 11, fontweight="bold")
+plt.legend(title="City", bbox_to_anchor=(1.02, 1), loc="upper left")  # optional: legend outside
+plt.tight_layout()
+plt.show()
+
+
+
+# %% [markdown]
+# #### Summary of Seasonal Response-Time Patterns
+#
+# Seasonal differences in response times are relatively small in both cities. Average and median response times remain stable across spring, summer, fall, and winter, indicating consistent year-round operational performance.
+#
+# NYC records slightly higher response times than Toronto in every season, with P90 values consistently around 8.7–8.8 minutes compared to Toronto’s 7.5–7.9 minutes. Summer shows a mild increase in both average and tail response times for each city, suggesting slightly higher demand or operational pressure during this period.
+#
+# Overall, seasonal effects are modest compared to hourly or tail-risk variations. Response performance is generally stable throughout the year, with Toronto maintaining lower average and tail response times than NYC across all seasons.
+#
 
 # %% [markdown]
 # ### 3.8 Exploratory Delay Rate by Hour
@@ -1253,13 +1433,14 @@ plt.tight_layout()
 plt.show()
 
 # %% [markdown]
-# ### 3.9 Summary of Temporal Patterns
+# ### 3.9 Summary of Temporal Delay Patterns (>8 minutes)
 #
-# Temporal analysis shows clear daily and weekly patterns in emergency response performance across both cities. Response times and incident volumes vary by hour of day, with slower responses and higher delay risk during overnight and early-morning periods and higher call volumes during daytime and evening hours. Weekend response times are slightly lower than weekday levels, likely reflecting reduced traffic and demand.
+# Delay rates vary clearly by hour of day in both cities, with the highest risk occurring during overnight and early-morning periods. Toronto’s delay rate peaks around 2–5 AM (about 10–11%) and declines to its lowest levels in the early evening (around 6–7%), before rising slightly again late at night.  
 #
-# Exploratory delay-rate patterns follow the same trend. Both cities experience higher delay percentages overnight, and NYC shows consistently higher delay rates across most hours compared to Toronto. These patterns align with earlier P90 response-time results, indicating that time of day affects both typical response times and the likelihood of delays.
+# NYC shows a similar daily pattern but at consistently higher levels. Delay rates climb sharply overnight and peak between roughly 5–7 AM (about 20–21%), then gradually decline through the day, reaching their lowest levels late evening (around 10%).  
 #
-# Overall, time-of-day and day-of-week patterns play an important role in response performance. These findings support including temporal factors in later predictive and survival analyses of delay risk.
+# Overall, both cities experience the greatest delay risk during overnight hours, but NYC’s rates are substantially higher across nearly all time periods. This indicates stronger overnight operational pressure and greater temporal variability in NYC, while Toronto maintains lower and more stable delay rates throughout the day.
+#
 
 # %% [markdown]
 # ## 4. Spatial/ Operational Signals
@@ -1333,7 +1514,6 @@ display(
 # Helper Functions
 
 # %%
-
 def area_response_perf(df, area_col="location_area", p=0.9):
     """
     4.1 Response time by area (mean + tail), computed on completed incidents only.
@@ -1476,6 +1656,32 @@ display(nyc_area_vol.orderBy(F.desc("pct_censored")).limit(15))
 # This subsection explores the relationship between incident volume and average response-time performance at the area level. By plotting total incident volume against mean response time, we assess whether higher demand is associated with systematically slower responses, and whether this relationship differs between Toronto and NYC.
 
 # %%
+tor_area = (
+    toronto_df
+    .filter(F.col("response_minutes").isNotNull())
+    .groupBy("location_area")
+    .agg(
+        F.count("*").alias("n_total"),
+        F.round(F.mean("response_minutes"), 2).alias("mean_response")
+    )
+    .withColumn("city", F.lit("Toronto"))
+)
+nyc_area = (
+    nyc_df
+    .filter(F.col("response_minutes").isNotNull())
+    .groupBy("location_area")
+    .agg(
+        F.count("*").alias("n_total"),
+        F.round(F.mean("response_minutes"), 2).alias("mean_response")
+    )
+    .withColumn("city", F.lit("NYC"))
+)
+
+area_compare = tor_area.unionByName(nyc_area)
+
+display(area_compare.orderBy("city", F.desc("n_total")))
+
+# %%
 area_pd = (
     area_compare
         .filter(F.col("mean_response").isNotNull())
@@ -1544,34 +1750,11 @@ plt.show()
 
 
 # %% [markdown]
-# **Top 15 Stattion by Volumne Analysis**
+# **Toronto Spatial Response-Time Patterns (Station Areas)**
 #
-# Among the top 15 station areas by incident volume in Toronto, mean response times are tightly clustered, with most areas exhibiting typical response times between approximately 4.2 and 5.6 minutes. High-volume station areas do not consistently exhibit slower average response times, indicating that demand volume alone does not explain differences in typical performance. This suggests that operational capacity and deployment are generally effective at accommodating high demand, while residual variation in mean response time may reflect localized structural or geographic factors.
-
-# %%
-plt.figure(figsize=(10,5))
-
-ax = sns.scatterplot(
-    data=toronto_pd_top,
-    x="location_area",
-    y="mean_response",
-    size="n_total",
-    hue="location_area",           # categorical colors
-    palette="tab20",               # max 20 distinct colors
-    sizes=(80, 600),
-    alpha=0.8,
-    legend=False                   # turn off legend (too crowded)
-)
-
-ax.set_title(
-    f"Toronto: Mean Response Time by Station Area (Top {TOP_N} by Volume)"
-)
-ax.set_xlabel("Station Area")
-ax.set_ylabel("Mean Response Time (Completed Incidents)")
-ax.tick_params(axis="x", rotation=90)
-
-plt.tight_layout()
-plt.show()
+# Average response times across Toronto station areas are generally close to the citywide mean of about 4.83 minutes, with most high-volume areas performing near or below this benchmark. A few station areas show higher mean response times (above 5 minutes), indicating localized pockets of slower performance.
+#
+# Higher call volumes do not consistently correspond to slower response times. Some of the busiest station areas maintain relatively fast averages, suggesting efficient resource allocation, while a few lower-volume areas exhibit higher delays. Overall, spatial variation exists but is moderate, with most station areas demonstrating stable and comparable response performance across the city.
 
 # %% [markdown]
 # #### 4.3.2 NYC: 
@@ -1641,9 +1824,12 @@ plt.show()
 
 
 # %% [markdown]
-# **Summary**
+# **NYC Spatial Response-Time Patterns (Borough)**
 #
-# Mean response times across NYC boroughs are tightly clustered, ranging from roughly 5.3 to 6.5 minutes, despite large differences in incident volume. Brooklyn, the highest-volume borough, performs below the citywide mean, indicating that higher demand does not necessarily result in slower typical response. <br>Overall, borough-level differences in mean response time are modest, suggesting that factors beyond volume such as geography or traffic conditions—likely drive residual variation.
+# Average response times vary modestly across NYC boroughs but remain close to the citywide mean of about 5.85 minutes. The Bronx records the highest mean response time, followed by Manhattan and Queens, while Brooklyn performs slightly better and Staten Island shows the lowest average response time.
+#
+# Incident volume differs substantially by borough, with Brooklyn handling the largest share of calls and Staten Island the smallest. Despite these volume differences, response-time variation across boroughs is relatively moderate, suggesting broadly consistent performance citywide with some localized pressure in higher-delay areas such as the Bronx.
+#
 
 # %% [markdown]
 # ### 4.4 Operational Signals Effects
@@ -1703,9 +1889,15 @@ display(response_by_category(nyc_df, "unified_call_source", p=0.9))
 
 # %% [markdown]
 # #### 4.4.3 Summary of Operation Singals and Call Source Effects
-# Across both Toronto and NYC, **alarm level is strongly associated with response prioritization**, with higher alarm levels exhibiting **shorter mean and P90 response times**, despite representing a very small fraction of total incidents. This pattern suggests that escalated incidents are dispatched and responded to more rapidly, while level-1 alarms dominate overall system performance.
 #
-# When stratified by call source, **differences in mean response times are modest**, but **tail delays (P90)** vary more noticeably. Public and EMS-initiated calls tend to exhibit **higher P90 response times** than alarm-system-initiated incidents in both cities, indicating that extreme delays are more sensitive to call origin than typical performance. Small-volume categories are reported for completeness but are not emphasized in interpretation.
+# Most incidents in both cities occur at alarm level 1, and response times are broadly similar across alarm levels. Higher alarm levels (2 and 3) are relatively rare and show slightly faster average and P90 response times, likely reflecting prioritization and rapid dispatch for more severe events.
+#
+# Call source shows clearer performance differences. In Toronto, public-initiated calls have the highest mean and P90 response times, while alarm-system calls tend to be handled more quickly and consistently. EMS/medical calls dominate total volume and exhibit performance close to the citywide average.  
+#
+# In NYC, EMS/medical calls account for the largest share of incidents and show the highest mean and P90 response times, indicating greater complexity or operational demand. Alarm-system calls again show comparatively faster and more stable performance, while public calls fall between these extremes.
+#
+# Overall, alarm level has limited impact on average response performance, whereas call source—particularly EMS/medical and public calls—shows stronger associations with response-time variability and tail risk.
+#
 
 # %% [markdown]
 # ### 4.5 High-Volume Areas and Response Performance (Ranked Comparison)
@@ -1714,6 +1906,11 @@ display(response_by_category(nyc_df, "unified_call_source", p=0.9))
 # #### 4.5.1 Toroton Volume Area and Response Performance
 
 # %%
+toronto_area_stats = (
+    area_response_summary(toronto_df, area_col="location_area", p=0.9)
+    .withColumn("city", F.lit("Toronto"))
+)
+
 display(
     toronto_area_stats
     .select("location_area", "n_total", "mean_response", "p90_response")
@@ -1725,6 +1922,11 @@ display(
 # #### 4.5.2 NYC Volume Area and Response Performance
 
 # %%
+nyc_area_stats = (
+    area_response_summary(nyc_df, area_col="location_area", p=0.9)
+    .withColumn("city", F.lit("NYC"))
+)
+
 display(
     nyc_area_stats
     .select("location_area", "n_total", "mean_response", "p90_response")
@@ -1734,12 +1936,15 @@ display(
 
 
 # %% [markdown]
-# #### 4.5.3 Summary of High-Volume Areas and Response Performance.
-# Among Toronto’s highest-volume station areas, both mean and P90 response times vary substantially, ranging from approximately **4.1 to 5.6 minutes** for the mean and **5.8 to 7.9 minutes** for the P90, despite similar incident volumes. Several high-demand areas maintain comparatively fast response times, while others exhibit elevated tail delays, indicating that demand volume alone does not explain performance differences at the station level.
+# #### 4.5.3 Summary of High-Volume Areas and Response Performance
 #
-# In NYC, borough-level response performance also varies across high-volume areas, with the **Bronx and Manhattan** exhibiting higher mean and P90 response times than **Brooklyn** and **Queens**, despite comparable demand. 
+# High-volume areas in both cities generally maintain response times close to their respective citywide averages, indicating that heavy demand does not automatically translate into slower performance. In Toronto, several of the busiest station areas (e.g., 314, 325, 332) show relatively fast mean and P90 response times, suggesting efficient resource deployment in core service zones. However, a few high- or mid-volume areas (such as 442 and 231) exhibit higher averages and tail delays, pointing to localized operational pressure.
 #
-# Overall, these ranked comparisons reinforce that high incident volume does not systematically correspond to faster or slower response, and that additional operational and spatial factors likely drive observed performance variation.
+# In NYC, Brooklyn handles the largest incident volume while maintaining comparatively lower mean response times than the Bronx and Manhattan, indicating stronger efficiency under high demand. The Bronx and Manhattan show higher mean and P90 values despite slightly lower volumes, suggesting greater congestion or operational complexity in those boroughs.
+#
+# Overall, high incident volume alone does not determine slower response performance. Some high-demand areas demonstrate strong operational efficiency, while certain lower- or mid-volume areas show elevated delays, highlighting the importance of localized resource allocation and operational conditions.
+#
+#
 
 # %% [markdown]
 # ### 4.6 Exploratory Clustering (Toronto) and NYC Spatial Analysis
@@ -1854,10 +2059,22 @@ def cluster_locations(location_df, city_name="City", k=4):
     print(loadings.round(3))
 
     plt.figure(figsize=(7,5))
-    plt.scatter(coords[:, 0], coords[:, 1], c=pdf["cluster"])
+    palette = sns.color_palette("tab10", n_colors=k)   # distinct colors
+
+    sns.scatterplot(
+        x=coords[:, 0],
+        y=coords[:, 1],
+        hue=pdf["cluster"],
+        palette=palette,
+        s=80,
+        edgecolor="black"
+    )
+
     plt.xlabel("PC1")
     plt.ylabel("PC2")
     plt.title(f"{city_name}: Location Risk Clusters (PCA projection)")
+    plt.legend(title="Cluster", bbox_to_anchor=(1.02, 1), loc="upper left")
+
     plt.show()
 
     # --- Summary table ---
@@ -1881,26 +2098,13 @@ tor_pdf, tor_summary, tor_top = cluster_locations(tor_loc, city_name="Toronto", 
 
 # %% [markdown]
 # ##### Summary: Exploratory Clustering of Toronto Location Risk Profiles 
-# _**Note: (This draft is to be placed in report. The shorter version will be replaced with this section later)**_
 #
-# To explore spatial variation in emergency response performance across Toronto, an unsupervised clustering analysis was conducted at the location-area level. Each location was characterized using aggregated operational metrics, including call volume, mean and P90 response time, short-term demand intensity (calls in the past 30 and 60 minutes), and alarm severity indicators. Features were standardized prior to clustering to ensure comparability across variables with different scales.
+# Exploratory clustering was conducted to group Toronto station areas based on response-time characteristics and incident volume. The elbow method suggests that a 3–4 cluster solution provides a reasonable balance between model simplicity and explanatory power, with diminishing improvements in inertia beyond this range. A 4-cluster structure was selected to capture meaningful variation in operational risk profiles.
 #
-# An elbow-method assessment indicated that a four-cluster solution provided a reasonable balance between model simplicity and explanatory power, as inertia declined sharply between two and four clusters before stabilizing. K-means clustering with four clusters was therefore selected to identify distinct operational risk profiles across locations.
+# The resulting clusters reveal distinct location patterns. Some areas combine high call volume with relatively fast response times, indicating efficient resource deployment. Others show moderate volume but higher mean and P90 response times, suggesting localized delay risk. A smaller set of locations exhibits low volume yet elevated response times, pointing to potential coverage or resource-allocation challenges.
 #
-# To visualize cluster separation, Principal Component Analysis (PCA) was applied to project the multi-dimensional feature space into two dimensions. The PCA scatter plot reveals clear grouping of location areas, indicating that Toronto emergency response environments can be segmented into several distinct operational profiles.
+# Overall, clustering highlights that response-time performance varies across locations in structured ways rather than randomly. These groupings provide a useful foundation for identifying high-risk areas, informing staffing considerations, and incorporating location risk profiles as features in subsequent modeling.
 #
-# PCA loadings suggest that the first principal component (PC1) primarily reflects overall demand intensity and workload. Variables such as call volume and short-term demand indicators (calls in the past 30 and 60 minutes) load positively on PC1, while response-time metrics load negatively. As a result, locations positioned on the positive side of PC1 tend to experience higher incident volumes and demand pressure, whereas locations on the negative side are characterized by lower demand and comparatively faster response times.
-#
-# The second principal component (PC2) is primarily associated with incident severity. Alarm-level variables, particularly the proportion of high-alarm incidents, load strongly on PC2, indicating that vertical separation in the PCA plot reflects differences in incident severity rather than workload alone. Locations with higher PC2 values tend to handle more severe incidents, even if their call volumes are not the highest.
-#
-# Cluster interpretation suggests the presence of four operational profiles across Toronto:
-#
-# * **High-demand locations:** Areas with elevated call volumes and demand intensity, forming a distinct cluster along the positive PC1 axis. These represent busy operational zones requiring sustained resource allocation.
-# * **Moderate-demand baseline locations:** A central cluster representing typical operational environments with balanced demand and response performance.
-# * **Low-demand, fast-response locations:** Areas characterized by lower incident volume and relatively faster response times, indicating stable operational conditions.
-# * **Severity-influenced locations:** Locations with relatively higher alarm-level characteristics, separated along the PC2 axis, suggesting environments where incident severity may contribute to response-time variation.
-#
-# Overall, the clustering analysis highlights meaningful spatial heterogeneity in Toronto’s emergency response system. While many locations operate under similar conditions, a subset of areas exhibits distinct demand and severity profiles that may contribute to elevated response-time risk. These findings support subsequent predictive and survival modeling by identifying underlying structural differences in operational environments across the city.
 #
 
 # %% [markdown]
@@ -1964,14 +2168,14 @@ ax.set_ylim(0, y_max * 1.15)
 ax.grid(axis="y", linestyle="--", alpha=0.5)
 
 # Smaller tick labels
-ax.tick_params(axis="x", labelsize=8)
-ax.tick_params(axis="y", labelsize=8)
+ax.tick_params(axis="x", labelsize=9)
+ax.tick_params(axis="y", labelsize=9)
 
 plt.xticks(rotation=45)
 
 plt.title("NYC Mean vs P90 Response Time by Location", fontsize=13, fontweight="bold")
-plt.xlabel("Location Area", fontsize=10)
-plt.ylabel("Response Time (minutes)", fontsize=10)
+plt.xlabel("Location Area", fontsize=11, fontweight = "bold")
+plt.ylabel("Response Time (minutes)", fontsize=11, fontweight = "bold")
 
 # Data labels for grouped bars
 for p in ax.patches:
@@ -2010,14 +2214,14 @@ ax = sns.barplot(
 ax.grid(axis="y", linestyle="--", alpha=0.5)
 
 # Smaller ticks
-ax.tick_params(axis="x", labelsize=8)
-ax.tick_params(axis="y", labelsize=8)
+ax.tick_params(axis="x", labelsize=9)
+ax.tick_params(axis="y", labelsize=)
 
 plt.xticks(rotation=45)
 
 plt.title("NYC Incident Volume by Location", fontsize=13, fontweight="bold")
-plt.xlabel("Location Area", fontsize=10)
-plt.ylabel("Incident Count", fontsize=10)
+plt.xlabel("Location Area", fontsize=11, fontweight = "bold")
+plt.ylabel("Incident Count", fontsize=11, fontweight = "bold")
 
 # Headroom
 y_max = pdf["call_volume"].max()
@@ -2041,9 +2245,12 @@ plt.show()
 # %% [markdown]
 # ##### Summary of NYC Spatial Patterns and Demand–Performance Comparison
 #
-# Spatial analysis of NYC incident data reveals clear variation in response-time performance and incident volume across boroughs. Brooklyn and Manhattan account for the highest incident volumes, with approximately 421,772 and 374,377 incidents respectively, followed by the Bronx and Queens. Richmond/Staten Island has substantially lower call volume (68,814), reflecting its smaller population and geographic scale.
+# Response-time performance varies across NYC boroughs, with the Bronx and Manhattan showing the highest mean and P90 response times, indicating greater delay risk and operational pressure. Queens sits near the middle of the distribution, while Brooklyn and Staten Island demonstrate comparatively lower average and tail response times.
 #
-# Despite these differences in workload, response-time patterns do not strictly follow call volume. The Bronx exhibits the highest mean response time (6.46 minutes) and the highest P90 response time (9.45 minutes), indicating comparatively greater tail-delay risk. Manhattan and Queens show moderately high mean response times and elevated P90 values (8.97 and 8.57 minutes respectively), suggesting that peak-period delays occur even in high-capacity urban areas. In contrast, Brooklyn records the highest incident volume but one of the lowest mean response times (5.30 minutes) and relatively lower tail-delay risk (P90 = 7.80 minutes). Richmond/Staten Island, while lower in demand, shows slightly faster average response performance overall.
+# Incident volume differs substantially by borough. Brooklyn handles the largest share of calls but maintains relatively lower mean and P90 response times, suggesting more efficient performance under high demand. In contrast, the Bronx and Manhattan show higher delays despite lower or comparable volumes, pointing to potential congestion, travel complexity, or resource constraints.
+#
+# Overall, the comparison shows that higher call volume does not necessarily lead to slower response times. Some high-demand areas maintain strong performance, while others exhibit elevated delays, highlighting the importance of localized operational conditions and resource allocation in shaping response outcomes.
+#
 #
 # Short-term demand indicators (calls in the past 30 and 60 minutes) are relatively consistent across boroughs, suggesting that baseline demand intensity is broadly similar despite differences in total volume. Alarm-level averages are also highly stable across locations, indicating that incident severity distribution does not vary substantially by borough.
 #
@@ -2084,9 +2291,15 @@ display(nyc_risk.select("location_area","n_total","p90_response","risk_score").l
 
 # %% [markdown]
 # #### 4.7.3 Summary of Composite Tail-Risk Prioritization
-# The composite risk score highlights areas where **high incident volume coincides with elevated tail response times**, identifying locations with the greatest exposure to extreme delays. In Toronto, the highest-risk station areas combine moderate-to-high demand with relatively large P90 response times, indicating that tail delays, not just volume, drive prioritization. In NYC, **Manhattan, Brooklyn, and the Bronx** dominate the risk rankings due to their very high incident volumes coupled with elevated P90 response times, while Staten Island exhibits substantially lower overall exposure.
 #
-# Overall, the rankings reinforce that operational risk is shaped by the **interaction of demand and tail performance**, rather than by response speed or volume alone, supporting the use of this composite metric for within-city prioritization.
+# Composite risk scores, combining incident volume and P90 response time, highlight priority areas where both demand and tail-delay risk are elevated.  
+#
+# In Toronto, several high-volume station areas (e.g., 314, 332, 325) rank highest in composite risk due to their combination of substantial call volume and moderate tail delays. Some mid-volume areas (such as 132, 234, and 433) also emerge as risk priorities because of higher P90 response times, indicating localized delay pressure despite smaller workloads.
+#
+# In NYC, borough-level risk is dominated by Manhattan, Brooklyn, and the Bronx. Manhattan and the Bronx show particularly high risk due to elevated P90 response times combined with large incident volumes, while Brooklyn’s high call volume keeps its composite risk high even with somewhat lower tail delays. Staten Island shows the lowest overall risk due to substantially lower incident volume.
+#
+# Overall, composite tail-risk scoring provides a practical way to prioritize areas for operational attention by identifying locations where high demand and elevated delay risk intersect. This approach supports targeted resource planning and highlights areas where improvements could have the greatest impact on reducing extreme delays.
+#
 
 # %% [markdown]
 # ## 5. Incident Characteristic
@@ -2135,7 +2348,13 @@ display(nyc_incident_stats)
 
 # %% [markdown]
 # #### 5.1.3 Summary fo Incident Type vs Response Time Characteristics
-# Across both Toronto and NYC,** medical incidents account for the largest share of completed responses** and exhibit moderate mean response times, though tail delays (P90) remain elevated.** Fire-related incidents**, particularly structural fires, tend to receive **faster typical responses** and lower P90 values, reflecting prioritization of high-severity events. In contrast, **Other / Assistance, Rescue / Entrapment, and Hazardous / Utility** incidents show **higher tail response times** in both cities, indicating greater exposure to extreme delays despite reasonable average performance.
+#
+# Response times vary by incident category in both cities, with medical-related calls accounting for the largest share of incidents and showing performance close to overall city averages. In Toronto, medical and non-structural fire incidents tend to have relatively fast and stable response times, while categories such as hazardous/utility and other assistance show higher mean and P90 values, indicating greater operational complexity and tail-delay risk.
+#
+# In NYC, similar patterns emerge but at generally higher response-time levels. Rescue/entrapment and other assistance calls show the highest mean and P90 response times, suggesting more complex or resource-intensive incidents. Structural fire incidents, although critical, display comparatively faster and more consistent response times, likely reflecting prioritization and rapid dispatch protocols.
+#
+# Overall, incident type plays a meaningful role in response-time variability. High-volume medical calls shape baseline performance, while specialized or complex incident categories contribute disproportionately to longer delays and tail-risk in both cities, particularly in NYC.
+#
 #
 
 # %% [markdown]
@@ -2165,7 +2384,12 @@ display(nyc_alarm_stats)
 
 # %% [markdown]
 # #### 5.2.3 Summary of Alarm Level vs Response Time Performance
-# In both Toronto and NYC, higher alarm levels are associated with shorter mean and P90 response times, indicating that escalated incidents receive faster operational prioritization. Level-1 alarms dominate overall incident volume and therefore largely determine system-wide response performance. Results for alarm levels above 1 are based on small sample sizes and are interpreted descriptively rather than as statistically robust differences.
+# Most incidents in both cities occur at alarm level 1 and largely determine overall response-time performance. These routine incidents show average response times around 5–6 minutes, with NYC consistently higher than Toronto in both mean and P90 values.
+#
+# Higher alarm levels (2 and 3) are relatively rare but exhibit faster average and tail response times in both cities. This likely reflects prioritization and rapid dispatch for more severe incidents, where additional resources and urgency reduce delays.
+#
+# Overall, alarm level has a limited impact on overall averages due to the dominance of level-1 calls, but higher-severity incidents tend to be handled more quickly and with lower tail-delay risk, indicating effective prioritization in emergency response operations.
+#
 
 # %% [markdown]
 # ### 5.3 Rare but High-Risk Categories (High P90)
@@ -2233,9 +2457,14 @@ display(
 
 
 # %% [markdown]
-# **Summary**
+# **Response-Time Definition and Unit Consistency Summary**
 #
-# Response times in both Toronto and NYC are expressed in minutes and exhibit comparable central tendencies, with mean response times of approximately 5.3 minutes for Toronto and 5.9 minutes for NYC. Minimum values are near zero in both datasets, consistent with immediate arrivals or rounding effects. Toronto exhibits a substantially larger maximum response time than NYC, indicating heavier tail behavior and reinforcing the importance of tail-focused metrics in subsequent analysis.
+# Response time is measured in minutes for both Toronto and NYC, representing the interval between alarm initiation and unit arrival at the scene. Average response times are similar across cities, with Toronto at approximately 5.33 minutes and NYC at 5.88 minutes.
+#
+# Toronto shows a wider overall range, with a minimum of 0.08 minutes and a maximum exceeding 113 minutes, indicating the presence of extreme outliers or exceptional delays. NYC’s range is narrower, from 0.15 to 16.65 minutes, suggesting fewer extreme cases in the dataset used for analysis.
+#
+# Despite these differences in range, the response-time metric is consistently defined and comparable across both datasets, allowing for valid cross-city analysis of averages, percentiles, and delay patterns.
+#
 #
 
 # %% [markdown]
@@ -2276,9 +2505,12 @@ percentiles = (
 display(percentiles)
 
 # %% [markdown]
-# **Summary of Percentile-Based Cross-City Comparison **
+# **Summary of Percentile-Based Cross-City Comparison**
 #
-# Toronto and NYC exhibit similar median response times (P50), indicating broadly comparable typical performance. However, NYC shows consistently higher upper-tail percentiles (P75–P95), with notably larger differences at P90 and P95. This indicates heavier tail behavior in NYC, where extreme response delays occur more frequently than in Toronto, reinforcing the importance of tail-focused metrics in cross-city comparison and subsequent modeling.
+# Percentile comparisons show that typical response times are similar across the two cities, with medians around 5–5.5 minutes. However, differences become more pronounced at higher percentiles. Toronto maintains lower P75, P90, and P95 values than NYC, indicating fewer extreme delays and more stable tail performance.
+#
+# NYC’s higher P90 and P95 values suggest greater variability and a higher likelihood of longer response times in the upper tail of the distribution. Overall, while central performance is comparable, Toronto demonstrates stronger tail performance and lower extreme-delay risk than NYC.
+#
 #
 
 # %% [markdown]
@@ -2292,13 +2524,15 @@ display(percentiles)
 #
 # Correlation analysis is restricted to numeric, non-binary features with continuous or count-based meaning. Identifier fields, binary indicators, and categorical variables are excluded, as Pearson correlation is not appropriate for such data types.
 
+# %% [markdown]
+#
+# **Note: Day-of-week and month were excluded from the Pearson correlation matrix because they are categorical/cyclical variables. Treating them as numeric values can produce misleading correlation coefficients. Their effects are instead evaluated through grouped summaries and temporal pattern analysis.**
+
 # %%
 # Numeric, non-binary features selected for correlation analysis
 NUMERIC_COLS = [
     "response_minutes",
     "hour",
-    "day_of_week",
-    "month",
     "calls_past_30min",
     "calls_past_60min"
 ]
@@ -2348,6 +2582,16 @@ plt.tight_layout()
 plt.show()
 
 # %% [markdown]
+# **Correlation Summary of Numeric Features (Toronto)**
+#
+# Pearson correlation analysis shows that response time has very weak linear relationships with the available numeric predictors. Hour of day has a small negative correlation with response time (r ≈ −0.07), suggesting slightly faster responses during certain daytime periods, but the effect is minimal. Short-term demand indicators (`calls_past_30min` and `calls_past_60min`) also show near-zero correlation with response time, indicating that immediate workload alone does not strongly explain delay variation in a linear sense.
+#
+# The two demand variables are strongly correlated with each other (r ≈ 0.74), reflecting that they capture similar short-term call volume conditions. This suggests potential redundancy between these features in modeling.
+#
+# Overall, the weak correlations indicate that response-time variability is likely driven by nonlinear, spatial, and operational factors rather than simple linear relationships with individual temporal or demand variables.
+#
+
+# %% [markdown]
 # #### 7.1.2 NYC Data
 
 # %%
@@ -2388,6 +2632,16 @@ ax.tick_params(axis="y", labelsize=9)
 plt.tight_layout()
 plt.show()
 
+
+# %% [markdown]
+# **Correlation Analysis of Numeric Features (NYC)**
+#
+# Pearson correlation results show that response time has very weak linear relationships with hour of day and short-term call volume indicators. Correlations between response time and hour (r ≈ −0.08), calls in the past 30 minutes (r ≈ −0.04), and calls in the past 60 minutes (r ≈ −0.05) are all close to zero, suggesting that simple linear relationships do not explain response-time variability well.
+#
+# However, strong relationships exist among the workload variables themselves. Hour of day is moderately correlated with recent call volume (r ≈ 0.51–0.57), indicating predictable daily demand cycles. Calls in the past 30 and 60 minutes are highly correlated (r ≈ 0.93), showing that they capture similar short-term demand conditions and may be redundant in modeling.
+#
+# Overall, the weak direct correlations with response time suggest that delays are likely influenced by nonlinear effects, spatial factors, and operational conditions rather than simple linear relationships with individual temporal or workload variables.
+#
 
 # %% [markdown]
 # ### 7.2 Categorical Feature Analysis
@@ -2436,7 +2690,12 @@ plt.show()
 
 
 # %% [markdown]
-# Response time distributions vary modestly across incident categories, with most medians clustered between four and six minutes. Categories such as Hazardous / Utility and Rescue / Entrapment exhibit slightly higher variability and longer tails, though extreme delays are present across all categories. This suggests that while incident type influences response characteristics, tail delays are largely systemic rather than driven by a single category.
+# **Response Time by Incident Category (Toronto)**
+#
+# Response times across incident categories are broadly similar in their central ranges, with most medians clustered around 4–6 minutes. However, variability differs by category. Hazardous/utility and rescue/entrapment incidents show slightly higher median and upper-tail response times, suggesting greater operational complexity and longer handling times. Medical and non-structural fire incidents tend to have more stable and slightly lower central response times.
+#
+# All categories exhibit substantial right-tail outliers, indicating that extended delays occur across incident types rather than being confined to a single category. Overall, while typical response performance is comparable across categories, specialized or complex incidents contribute more to tail-risk variability.
+#
 
 # %% [markdown]
 # ##### NYC
@@ -2475,7 +2734,12 @@ plt.tight_layout()
 plt.show()
 
 # %% [markdown]
-# In NYC, response time distributions vary across incident categories, with Fire, Structural incidents exhibiting the lowest typical response times and categories such as Rescue / Entrapment and Hazardous / Utility showing higher medians and wider spreads. Despite these differences, extreme delays occur across all incident types, indicating that tail risk is not confined to specific categories. Overall patterns are broadly consistent with Toronto, supporting cross-city comparability.
+# **Response Time by Incident Category (NYC)**
+#
+# Response-time distributions vary by incident category but share similar central ranges, with most medians falling between roughly 4–6 minutes. Structural fire incidents tend to have the fastest and most consistent response times, reflecting prioritization and rapid dispatch for critical events. In contrast, rescue/entrapment and other assistance incidents show higher medians and wider upper tails, indicating greater operational complexity and increased likelihood of longer delays.
+#
+# Medical incidents account for a large share of calls and display moderate variability around the citywide average. All categories exhibit right-skewed distributions with noticeable upper-tail outliers, suggesting that extended delays occur across multiple incident types rather than being confined to a single category. Overall, specialized and complex incidents contribute more to response-time variability and tai
+#
 #
 
 # %% [markdown]
@@ -2514,6 +2778,14 @@ plt.show()
 
 
 # %% [markdown]
+# **Response Time by Alarm Level (Toronto)**
+#
+# Response-time distributions are broadly similar across alarm levels, with most incidents concentrated around 4–6 minutes. Alarm level 1 accounts for the vast majority of calls and therefore drives overall performance patterns. Higher alarm levels (2 and 3), though far less frequent, show slightly lower median and P90 response times, suggesting prioritization and faster dispatch for more severe incidents.
+#
+# All alarm levels exhibit right-skewed distributions with upper-tail outliers, but extreme delays are most visible in level-1 incidents due to their large volume. Overall, alarm severity does not substantially increase average response times; instead, higher-severity incidents tend to be handled slightly faster, indicating effective prioritization in eme
+#
+
+# %% [markdown]
 # ##### NYC
 
 # %%
@@ -2545,8 +2817,12 @@ plt.tight_layout()
 plt.show()
 
 # %% [markdown]
-# ##### Insight
-# Alarm level does not exhibit a monotonic relationship with response time in either city. In both Toronto and NYC, Alarm Level 1 incidents show the greatest variability and the longest tail delays, reflecting their high volume and diverse operational contexts. Higher alarm levels are comparatively rare and display tighter response distributions, suggesting that tail risk is driven more by system-wide demand than by incident escalation level.
+# **Response Time by Alarm Level (NYC)**
+#
+# Most NYC incidents occur at alarm level 1 and show median response times around 5–6 minutes, with a wider spread and more upper-tail outliers compared to higher alarm levels. Alarm levels 2 and 3 are much less frequent but display lower median and P90 response times, indicating faster dispatch and prioritization for more severe incidents.
+#
+# Level-1 incidents account for the majority of extreme delays due to their high volume, while higher alarm levels exhibit tighter distributions and fewer prolonged response times. Overall, response performance does not worsen with increasing alarm severity; instead, higher-severity incidents tend to be handled more quickly, suggesting effective prioritization and resource mobilization in NYC’s response system.
+#
 
 # %% [markdown]
 # #### 7.2.3 Call Source vs Response Time
@@ -2584,6 +2860,14 @@ plt.show()
 
 
 # %% [markdown]
+# **Response Time by Call Source (Toronto)**
+#
+# Response-time distributions vary slightly by call source but share similar central ranges, with most medians around 4–6 minutes. Public-initiated calls and EMS/medical calls account for the largest share of incidents and show moderate variability around the citywide average. Alarm-system calls tend to have slightly lower and more stable response times, suggesting quicker dispatch for automatically triggered alerts.
+#
+# Calls categorized as “Other/System” display somewhat wider variability and higher upper-tail delays, indicating greater operational complexity or coordination requirements. All call sources exhibit right-skewed distributions with occasional extreme delays, though most incidents are handled within a relatively consistent time range. Overall, call source influences variability and tail risk more than typical response-t
+#
+
+# %% [markdown]
 # ##### NYC
 
 # %%
@@ -2615,13 +2899,13 @@ plt.tight_layout()
 plt.show()
 
 # %% [markdown]
-# ##### Insight
-# Response time distributions vary by call source in both Toronto and NYC, with Public and EMS / Medical calls exhibiting greater variability and longer tail delays than Alarm System calls. Alarm-originated incidents show more consistent response times, likely reflecting automated detection and standardized dispatch workflows. Overall patterns are consistent across cities, indicating that call source influences response-time variability rather than typical response speed.
+# **Response Time by Call Source (NYC)**
 #
-
-# %% [markdown]
-# ### Summary
-# Overall, correlation and categorical analyses reveal expected relationships and variability patterns without indicating excessive redundancy or anomalous behavior, supporting the selected feature set for downstream predictive modeling.
+# Response-time distributions are broadly similar across call sources, with most medians clustered around 4–6 minutes. Alarm-system calls tend to show slightly lower and more consistent response times, reflecting faster dispatch for automatically triggered incidents. EMS/medical and public-initiated calls account for the largest share of incidents and display moderate variability around the citywide average.
+#
+# Calls categorized as “Other/System” exhibit somewhat wider upper tails, indicating a higher likelihood of longer delays in more complex or less standardized situations. Across all call sources, distributions are right-skewed with visible upper-tail outliers, suggesting that extended delays occur across multiple call types. Overall, call source influences variability and tail risk more than typical response-time levels in NYC.
+#
+#
 
 # %% [markdown]
 # ## 9. EDA-Driven Insights
