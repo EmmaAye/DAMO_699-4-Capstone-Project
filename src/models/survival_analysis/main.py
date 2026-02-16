@@ -1,7 +1,7 @@
 # main.py
 from pyspark.sql import SparkSession
 from toronto_survival_analysis import load_and_clean_base, km_overall, km_by_time_of_day
-from toronto_survival_analysis import run_cox_model
+from toronto_cox_proportional_hazards_model import run_cox_model
 
 
 TABLE_NAME = "workspace.capstone_project.tfs_incidents_gold" 
