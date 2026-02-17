@@ -50,16 +50,30 @@ def tfs_incidents_silver():
 
         # ========== RESPONSE TIME CALCULATIONS ==========
         # Calculate response time in SECONDS
-        .withColumn("response_time_seconds",
-            (col("arrival_time").cast("long") - col("alarm_time").cast("long")))
+        .withColumn(
+            "response_time_seconds",
+            when(
+                col("arrival_time").isNull() | col("alarm_time").isNull(),
+                None
+            ).otherwise(
+                col("arrival_time").cast("long") - col("alarm_time").cast("long")
+            )
+        )
         
         # Calculate response time in MINUTES
         .withColumn("response_time_minutes",
             round(col("response_time_seconds") / 60.0, 2))
         
         # Calculate total incident duration in minutes
-        .withColumn("incident_duration_minutes",
-            round((col("clear_time").cast("long") - col("alarm_time").cast("long")) / 60.0, 2))
+        .withColumn(
+            "response_time_minutes",
+            when(
+                col("response_time_seconds").isNull(),
+                None
+            ).otherwise(
+                round(col("response_time_seconds") / 60.0, 2)
+            )
+        )
         
         # Response time categories
         .withColumn("response_time_category",
