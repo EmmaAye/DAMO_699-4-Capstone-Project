@@ -483,10 +483,22 @@ def run_cox_for_table(
 # %%
 from pyspark.sql import SparkSession
 import pandas as pd
+import json, os
+from datetime import datetime
+from lifelines import CoxPHFitter
+from lifelines.statistics import proportional_hazard_test
+
 # from cox_hazard_lib import run_cox_for_table
 
 # %%
 spark = SparkSession.builder.getOrCreate()
+
+# %%
+BASE_OUTPUT_DIR = "/Workspace/Repos/jihirosan@gmail.com/damo_699-4-capstone-project/output"
+CSV_DIR = f"{BASE_OUTPUT_DIR}/tables"
+MODEL_DIR = f"{BASE_OUTPUT_DIR}/models"
+os.makedirs(CSV_DIR, exist_ok=True)
+os.makedirs(MODEL_DIR, exist_ok=True)
 
 # %% [markdown]
 # ### NYC
@@ -495,18 +507,31 @@ spark = SparkSession.builder.getOrCreate()
 TABLE_NAME = "workspace.capstone_project.nyc_model_ready"
 LABEL = "NYC"
 
-OUTPUT_DIR = "/Workspace/Repos/jihirosan@gmail.com/damo_699-4-capstone-project/output/csv/"
-HR_OUT = f"{OUTPUT_DIR}cox_hr_{LABEL}.csv"
-STATS_OUT = f"{OUTPUT_DIR}cox_stats_{LABEL}.csv"
+
+HR_OUT = f"{CSV_DIR}/cox_hr_{LABEL}.csv"
+STATS_OUT = f"{CSV_DIR}/cox_stats_{LABEL}.csv"
+
+
+# %%
+def convert_numpy(obj):
+    if isinstance(obj, dict):
+        return {k: convert_numpy(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy(v) for v in obj]
+    elif hasattr(obj, "item"):  # numpy scalar
+        return obj.item()
+    else:
+        return obj
+
 
 # %% [markdown]
 # #### Run For Different Penalizers (0.1, 0.5, 1.0)
 
 # %% [markdown]
-# **penalizer = 0.1**
+# ##### penalizer = 0.1
 
 # %%
-res = run_cox_for_table(
+nyc_res_01 = run_cox_for_table(
     spark,
     table_name=TABLE_NAME,
     censor_time=60.0,
@@ -521,14 +546,14 @@ res = run_cox_for_table(
     numeric_cols=["calls_past_30min", "calls_past_60min"]
 )
 
-print("Fit stats:", res["fit_stats"])
-display(res["hr_table"].head(30))
+print("Fit stats:", nyc_res_01["fit_stats"])
+display(nyc_res_01["hr_table"].head(30))
 
 # %% [markdown]
-# #### penalizer = 0.5
+# ##### penalizer = 0.5
 
 # %%
-res = run_cox_for_table(
+nyc_res_05 = run_cox_for_table(
     spark,
     table_name=TABLE_NAME,
     censor_time=60.0,
@@ -543,14 +568,14 @@ res = run_cox_for_table(
     numeric_cols=["calls_past_30min", "calls_past_60min"]
 )
 
-print("Fit stats:", res["fit_stats"])
-display(res["hr_table"].head(30))
+print("Fit stats:", nyc_res_05["fit_stats"])
+display(nyc_res_05["hr_table"].head(30))
 
 # %% [markdown]
-# #### penalizer = 1
+# ##### penalizer = 1
 
 # %%
-res = run_cox_for_table(
+nyc_res_10 = run_cox_for_table(
     spark,
     table_name=TABLE_NAME,
     censor_time=60.0,
@@ -565,8 +590,8 @@ res = run_cox_for_table(
     numeric_cols=["calls_past_30min", "calls_past_60min"]
 )
 
-print("Fit stats:", res["fit_stats"])
-display(res["hr_table"].head(30))
+print("Fit stats:", nyc_res_10["fit_stats"])
+display(nyc_res_10["hr_table"].head(30))
 
 # %% [markdown]
 # | penalizer | log-likelihood (higher is better) | partial AIC (lower is better) | concordance (higher is better) |
@@ -598,55 +623,50 @@ display(res["hr_table"].head(30))
 # #### Run With Best Penalizer and Results
 
 # %%
-res = run_cox_for_table(
-    spark,
-    table_name=TABLE_NAME,
-    censor_time=60.0,
-    penalizer=0.1,
-    categorical_cols=[
-        "day_of_week",
-        "season",
-        "incident_category",
-        "unified_alarm_level",
-        "time_bin"
-    ],
-    numeric_cols=["calls_past_30min", "calls_past_60min"]
-)
+nyc_final = nyc_res_01
 
-print("Fit stats:", res["fit_stats"])
-display(res["hr_table"].head(30))
+print("Fit stats:", nyc_final["fit_stats"])
+display(nyc_final["hr_table"].head(30))
 
 # %%
-print("Dropped columns:", res["drop_report"]["dropped_total"])
-print("Alarm dummies left:", [c for c in res["cox_df"].columns if "unified_alarm_level" in c])
-print("unified_alarm_level_3 present?", "unified_alarm_level_3" in res["cox_df"].columns)
+print("=== NYC SANITY CHECK ===")
+print("Rows:", len(nyc_final["cox_df"]))
+print("Censored (event=0):", int((nyc_final["cox_df"]["event_indicator"] == 0).sum()))
+print("Event observed (event=1):", int((nyc_final["cox_df"]["event_indicator"] == 1).sum()))
+print("Max duration:", float(nyc_final["cox_df"]["response_minutes"].max()))
+print("Min duration:", float(nyc_final["cox_df"]["response_minutes"].min()))
+
+# %%
+print("Dropped columns:", nyc_final["drop_report"]["dropped_total"])
+print("Alarm dummies left:", [c for c in nyc_final["cox_df"].columns if "unified_alarm_level" in c])
+print("unified_alarm_level_3 present?", "unified_alarm_level_3" in nyc_final["cox_df"].columns)
 
 # %%
 spark.read.table(TABLE_NAME).groupBy("unified_alarm_level").count().orderBy("unified_alarm_level").show()
 
 # %%
-predictors = [c for c in res["cox_df"].columns if c not in ["response_minutes", "event_indicator"]]
-print("Predictor columns:", predictors)
-print("Num predictors:", len(predictors))
+nyc_predictors = [c for c in nyc_final["cox_df"].columns if c not in ["response_minutes", "event_indicator"]]
+print("NYC Predictor columns:", nyc_predictors)
+print("Num predictors:", len(nyc_predictors))
 
 # %%
-print("Reference categories used:")
-print(res["reference_categories"])
+print("NYC Reference categories used:")
+print(nyc_final["reference_categories"])
 
 # %%
 print("unified_alarm_level_3 in cox_df?",
-      "unified_alarm_level_3" in res["cox_df"].columns)
+      "unified_alarm_level_3" in nyc_final["cox_df"].columns)
 
 # optional: see counts if it exists
-if "unified_alarm_level_3" in res["cox_df"].columns:
-    print(res["cox_df"]["unified_alarm_level_3"].value_counts().head())
+if "unified_alarm_level_3" in nyc_final["cox_df"].columns:
+    print(nyc_final["cox_df"]["unified_alarm_level_3"].value_counts().head())
 
 
 # %%
-res["hr_table"].sort_values("hazard_ratio").head(10)
+nyc_final["hr_table"].sort_values("hazard_ratio").head(10)
 
 # %%
-res["hr_table"].sort_values("hazard_ratio", ascending=False).head(10)
+nyc_final["hr_table"].sort_values("hazard_ratio", ascending=False).head(10)
 
 # %% [markdown]
 # Categorical variables were encoded using the most frequent category as the reference level to improve interpretability and stability of estimates. The Cox proportional hazards model was used to estimate average hazard effects over time. While formal tests indicated deviations from the proportional hazards assumption, such deviations are expected in large-scale emergency response data and do not materially affect the identification of key delay-risk drivers.
@@ -675,36 +695,272 @@ res["hr_table"].sort_values("hazard_ratio", ascending=False).head(10)
 # #### Save Results
 
 # %%
-res["hr_table"].to_csv(HR_OUT, index=False)
-pd.DataFrame([res["fit_stats"]]).to_csv(STATS_OUT, index=False)
+nyc_final["hr_table"].to_csv(HR_OUT, index=False)
+pd.DataFrame([nyc_final["fit_stats"]]).to_csv(STATS_OUT, index=False)
 print("Saved:", HR_OUT)
 print("Saved:", STATS_OUT)
 
-# %% [markdown]
-# ### PH Test
+# %%
+META_OUT
 
 # %%
-from lifelines import CoxPHFitter
-from lifelines.statistics import proportional_hazard_test
+META_OUT = f"{MODEL_DIR}/cox_meta_{LABEL}.json"
 
+nyc_meta = {
+    "table_name": TABLE_NAME,
+    "label": LABEL,
+    "censor_time": nyc_final["censor_time"],
+    "penalizer": 0.1,
+    "numeric_cols": nyc_final["numeric_cols"],
+    "categorical_cols": nyc_final["categorical_cols"],
+    "reference_categories": nyc_final["reference_categories"],
+    "drop_report": nyc_final["drop_report"],
+    "fit_stats": nyc_final["fit_stats"],
+    "created_at": datetime.now().isoformat(),
+}
+
+nyc_meta = convert_numpy(nyc_meta)
+with open(META_OUT, "w") as f:
+    json.dump(nyc_meta, f, indent=2)
+
+print("Saved:", META_OUT)
+
+
+# %% [markdown]
+# #### PH Test
+
+# %%
 duration_col = "response_minutes"
 event_col = "event_indicator"
 
 # 1) Sample for diagnostics
-df_test = res["cox_df"].sample(n=200_000, random_state=42).copy()
+nyc_df_test = nyc_final["cox_df"].sample(n=200_000, random_state=42).copy()
 
 # 2) Fit Cox on the SAME sample
-cph_test = CoxPHFitter(penalizer=0.1)
-cph_test.fit(df_test, duration_col=duration_col, event_col=event_col)
+nyc_cph_test = CoxPHFitter(penalizer=0.1)
+nyc_cph_test.fit(nyc_df_test, duration_col=duration_col, event_col=event_col)
 
 # 3) PH test on the SAME sample + model
-ph_test = proportional_hazard_test(cph_test, df_test, time_transform="rank")
+nyc_ph_test = proportional_hazard_test(nyc_cph_test, nyc_df_test, time_transform="rank")
 
 # 4) View most significant violations
-ph_test.summary.sort_values("p").head(20)
+nyc_ph_test.summary.sort_values("p").head(20)
 
+
+# %%
+PH_OUT = f"{MODEL_DIR}/cox_ph_test_{LABEL}.csv"
+ph_test.summary.sort_values("p").to_csv(PH_OUT, index=True)
+print("Saved:", PH_OUT)
 
 # %% [markdown]
 # Tests of the proportional hazards assumption indicated statistically significant deviations for several predictors, particularly incident type and time-of-day. Given the very large sample size, even minor time-varying effects were detected as statistically significant. In emergency-response settings, such deviations are expected due to dynamic dispatch prioritization and varying operational phases over the response timeline.
 #
 # The Cox model was therefore retained and interpreted as providing average hazard effects over time, consistent with prior emergency-service survival analyses. This approach allows meaningful comparison of delay-risk drivers across cities while maintaining interpretability.
+
+# %% [markdown]
+# ### Toronto
+
+# %%
+TABLE_NAME = "workspace.capstone_project.toronto_model_ready"
+LABEL = "Toronto"
+
+HR_OUT = f"{CSV_DIR}/cox_hr_{LABEL}.csv"
+STATS_OUT = f"{CSV_DIR}/cox_stats_{LABEL}.csv"
+
+# %%
+HR_OUT
+
+# %% [markdown]
+# #### Run For Different Penalizers (0.1, 0.5, 1.0)
+
+# %% [markdown]
+# ##### penalizer = 0.1
+
+# %%
+tor_res_01 = run_cox_for_table(
+    spark,
+    table_name=TABLE_NAME,
+    censor_time=60.0,
+    penalizer=0.1,
+    categorical_cols=[
+        "day_of_week",
+        "season",
+        "incident_category",
+        "unified_alarm_level",
+        "time_bin"
+    ],
+    numeric_cols=["calls_past_30min", "calls_past_60min"]
+)
+
+print("Fit stats:", tor_res_01["fit_stats"])
+display(tor_res_01["hr_table"].head(30))
+
+# %% [markdown]
+# ##### penalizer = 0.5
+
+# %%
+tor_res_05 = run_cox_for_table(
+    spark,
+    table_name=TABLE_NAME,
+    censor_time=60.0,
+    penalizer=0.5,
+    categorical_cols=[
+        "day_of_week",
+        "season",
+        "incident_category",
+        "unified_alarm_level",
+        "time_bin"
+    ],
+    numeric_cols=["calls_past_30min", "calls_past_60min"]
+)
+
+print("Fit stats:", tor_res_05["fit_stats"])
+display(tor_res_05["hr_table"].head(30))
+
+# %% [markdown]
+# ##### penalizer = 1
+
+# %%
+tor_res_10 = run_cox_for_table(
+    spark,
+    table_name=TABLE_NAME,
+    censor_time=60.0,
+    penalizer=1.0,
+    categorical_cols=[
+        "day_of_week",
+        "season",
+        "incident_category",
+        "unified_alarm_level",
+        "time_bin"
+    ],
+    numeric_cols=["calls_past_30min", "calls_past_60min"]
+)
+
+print("Fit stats:", tor_res_10["fit_stats"])
+display(tor_res_10["hr_table"].head(30))
+
+# %% [markdown]
+# | penalizer | log-likelihood (higher is better) | partial AIC (lower is better) | concordance (higher is better) |
+# | --------- | --------------------------------- | ----------------------------- | ------------------------------ |
+# | **0.1**   | **-4,151,324**                   | **8,302,691**                | **0.5669**                     |
+# | 0.5       | -4,154,786                       |8,309,614                    | 0.5656                         |
+# | 1.0       | -4,156,836                       |8,313,714                    | 0.5647                         |
+#
+# **Interpretation**:
+#
+# **Penalizer 0.1 is clearly best on all metrics**
+# - highest log-likelihood
+# - lowest AIC
+# - highest concordance
+#
+# As penalizer increases:
+#
+# - model gets more shrinkage
+#
+# - coefficients shrink toward zero
+#
+# - fit gets worse (AIC ↑, concordance ↓)
+#
+# Therefore:
+#
+# **Best penalizer = 0.1**
+
+# %% [markdown]
+# #### Run With Best Penalizer and Results
+
+# %%
+tor_final = tor_res_01
+
+print("Fit stats:", tor_final["fit_stats"])
+display(tor_final["hr_table"].head(30))
+
+# %%
+print("=== TORONTO SANITY CHECK ===")
+print("Rows:", len(tor_final["cox_df"]))
+print("Censored (event=0):", int((tor_final["cox_df"]["event_indicator"] == 0).sum()))
+print("Event observed (event=1):", int((tor_final["cox_df"]["event_indicator"] == 1).sum()))
+print("Max duration:", float(tor_final["cox_df"]["response_minutes"].max()))
+print("Min duration:", float(tor_final["cox_df"]["response_minutes"].min()))
+
+# %%
+predictors = [c for c in tor_final["cox_df"].columns if c not in ["response_minutes", "event_indicator"]]
+print("Toronto Predictor columns:", predictors)
+print("Num predictors:", len(predictors))
+
+# %%
+print("Toronto Reference categories used:")
+print(tor_final["reference_categories"])
+
+# %%
+tor_final["hr_table"].sort_values("hazard_ratio").head(10)
+
+# %%
+tor_final["hr_table"].sort_values("hazard_ratio", ascending=False).head(10)
+
+# %% [markdown]
+# #### Survival Model Summary (Toronto)
+#
+# A Cox proportional hazards model was estimated to examine factors associated with first-unit arrival times in Toronto. Categorical variables were encoded using the most frequent category as the reference level (Medical incidents, alarm level 1, afternoon period, summer season, and the most common day of week). Hazard ratios therefore represent differences in arrival speed relative to a typical medical incident occurring under standard conditions.
+#
+# Overall model performance was moderate (concordance ≈ 0.57), indicating that while meaningful structure exists in Toronto response-time variation, predictive patterns are weaker than those observed in the NYC model. Among the predictors, **alarm severity and short-term demand intensity** were the most influential drivers of arrival speed. Incidents with alarm level 2 exhibited faster response compared with level 1 incidents (HR≈1.24), suggesting prioritization of higher-severity calls. Higher recent call volume also showed a measurable association with faster arrival (calls_past_60min HR≈1.05), likely reflecting heightened operational activity and resource deployment during busier periods.
+#
+# Temporal factors demonstrated smaller but statistically significant effects. Compared with afternoon responses (baseline), evening and morning incidents showed slightly faster arrivals (HR≈1.02 and HR≈1.01, respectively), while seasonal and day-of-week variations were modest. Incident-type effects were present but less pronounced than in NYC; for example, non-structural fire incidents were only marginally faster than medical calls (HR≈1.03). These findings suggest that, in Toronto, **operational demand levels and scheduling factors play a more prominent role than incident type in shaping response-time variability**, and that differences across categories are comparatively moderate.
+#
+# As with the NYC analysis, formal tests indicated some deviations from the proportional hazards assumption, which is expected given the large dataset and dynamic dispatch environment. The Cox model is therefore interpreted as providing average hazard effects over time and remains appropriate for identifying key factors associated with response-time variation across operational conditions.
+#
+
+# %% [markdown]
+# #### Save Results
+
+# %%
+tor_final["hr_table"].to_csv(HR_OUT, index=False)
+pd.DataFrame([tor_final["fit_stats"]]).to_csv(STATS_OUT, index=False)
+print("Saved:", HR_OUT)
+print("Saved:", STATS_OUT)
+
+# %%
+META_OUT = f"{MODEL_DIR}/cox_meta_{LABEL}.json"
+
+tor_meta = {
+    "table_name": TABLE_NAME,
+    "label": LABEL,
+    "censor_time": tor_final["censor_time"],
+    "penalizer": 0.1,
+    "numeric_cols": tor_final["numeric_cols"],
+    "categorical_cols": tor_final["categorical_cols"],
+    "reference_categories": tor_final["reference_categories"],
+    "drop_report": tor_final["drop_report"],
+    "fit_stats": tor_final["fit_stats"],
+    "created_at": datetime.now().isoformat(),
+}
+
+tor_meta = convert_numpy(nyc_meta)
+with open(META_OUT, "w") as f:
+    json.dump(tor_meta, f, indent=2)
+
+print("Saved:", META_OUT)
+
+# %% [markdown]
+# #### PH Test
+
+# %%
+duration_col = "response_minutes"
+event_col = "event_indicator"
+
+# 1) Sample for diagnostics
+tor_df_test = tor_final["cox_df"].sample(n=200_000, random_state=42).copy()
+
+# 2) Fit Cox on the SAME sample
+tor_cph_test = CoxPHFitter(penalizer=0.1)
+tor_cph_test.fit(tor_df_test, duration_col=duration_col, event_col=event_col)
+
+# 3) PH test on the SAME sample + model
+tor_ph_test = proportional_hazard_test(tor_cph_test, tor_df_test, time_transform="rank")
+
+# 4) View most significant violations
+tor_ph_test.summary.sort_values("p").head(20)
+
+# %%
+PH_OUT = f"{MODEL_DIR}/cox_ph_test_{LABEL}.csv"
+ph_test.summary.sort_values("p").to_csv(PH_OUT, index=True)
+print("Saved:", PH_OUT)
