@@ -1,0 +1,7 @@
+City,Stratification,Test,p_value,Significant?
+Toronto,Hour,Log-rank,0.0,True
+Toronto,Season,Log-rank,7.348413184843523e-20,True
+Toronto,Day of Week,Log-rank,3.6000466169448934e-31,True
+NYC,Hour,Log-rank,0.0,True
+NYC,Season,Log-rank,2.6715849655076087e-84,True
+NYC,Day of Week,Log-rank,9.596634084353653e-21,True
