@@ -81,14 +81,13 @@ Do survival-based delay probabilities reveal risks not captured by average respo
 
 ```
 
-data/
+docs/
 notebooks/
 models/
 output/
 ├── graphs/
 ├── models/
 └── tables/
-docs/
 tools/
 
 ```
