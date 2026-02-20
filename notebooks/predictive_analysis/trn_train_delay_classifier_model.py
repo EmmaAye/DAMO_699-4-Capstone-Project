@@ -17,7 +17,7 @@ df = df.filter(col("delay_indicator").isNotNull())
 categorical_cols = ['incident_category', 'season', 'unified_call_source', 'location_area']
 hasher = FeatureHasher(inputCols=categorical_cols, outputCol="categorical_features", numFeatures=512)
 
-# Feature Assembly
+# Feature Assembly 
 numeric_cols = ['hour', 'day_of_week', 'month', 'year', 'unified_alarm_level', 
                 'calls_past_30min', 'calls_past_60min']
 assembler = VectorAssembler(inputCols=numeric_cols + ["categorical_features"], outputCol="features")

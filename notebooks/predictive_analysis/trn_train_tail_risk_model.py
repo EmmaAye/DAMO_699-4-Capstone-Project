@@ -11,7 +11,7 @@ spark = SparkSession.builder.appName("TailRiskModel").getOrCreate()
 df = spark.table("workspace.capstone_project.toronto_model_ready")
 df = df.filter(col("response_minutes").isNotNull())
 
-# 2. Features for Tail Risk
+# 2. Features for Tail Risk toronto
 feature_cols = ['hour', 'day_of_week', 'calls_past_30min', 'unified_alarm_level']
 assembler = VectorAssembler(inputCols=feature_cols, outputCol="features")
 
