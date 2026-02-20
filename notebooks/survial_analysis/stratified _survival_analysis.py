@@ -44,6 +44,11 @@ df_to = spark.read.table(TORONTO_TABLE).select(
     col("season"),
     col("day_of_week")
 )
+
+df_to = df_to.where(
+"duration_original is not null AND duration_original > 0 AND event_original is not null"
+)
+
 # Apply censoring: duration = min(duration_original, 60)
 df_to = df_to.withColumn(
     "response_minutes",
@@ -87,6 +92,11 @@ df_nyc = spark.read.table(NYC_TABLE).select(
     col("season"),
     col("day_of_week")
 )
+
+df_nyc = df_nyc.where(
+"duration_original is not null AND duration_original > 0 AND event_original is not null"
+)
+
 # Apply censoring duration
 df_nyc = df_nyc.withColumn(
     "response_minutes",
@@ -187,7 +197,7 @@ def plot_km_and_test(df_spark, city_name, group_col, strat_label, group_order=No
 results = []
 
 hour_order = ["Night","Morning","Afternoon","Evening"]
-season_order = ["winter","spring","summer","fall"]
+season_order = ["Winter","Spring","Summer","Fall","winter","spring","summer","fall"]
 dow_order = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
 
 # Toronto
@@ -236,25 +246,50 @@ def logrank_summary(df_spark, city, strat_col):
         if len(s_at_60) > 0:
             risk_group = max(s_at_60, key=s_at_60.get)
 
+    if strat_col == "hour_group":
+        label = "Hour"
+    elif strat_col == "season":
+        label = "Season"
+    elif strat_col in ["day_of_week", "day_of_week_norm", "day_of_week_name"]:
+        label = "Day of Week"
+    else:
+        label = strat_col
     return {
         "City": city,
-        "Stratification": "Hour" if strat_col == "hour_group" else "Season",
+        "Stratification":label,
         "Test": "Log-rank",
         "p_value": pval,
         "Significant?": significant,
         "Higher-risk group (tail @60)": risk_group
     }
 
-results = []
-results.append(logrank_summary(df_to, "Toronto", "hour_group"))
-results.append(logrank_summary(df_nyc, "NYC", "hour_group"))
-results.append(logrank_summary(df_to, "Toronto", "season"))
-results.append(logrank_summary(df_nyc, "NYC", "season"))
 
-summary_df = pd.DataFrame(results)
-display(summary_df)
+# %%
+print(summary_df.columns.tolist())
 
-summary_path = f"/Workspace/Shared/DAMO_699-4-Capstone-Project/output/tables/logrank_summary_within_city.csv"
-summary_df.to_csv(summary_path, index=False)
-print("✅ Saved log-rank summary CSV:", summary_path)
+# %%
+print("----- US4.2 Interpretation Summary -----\n")
+
+risk_col = "Higher-risk group (tail @60)"
+has_risk = risk_col in summary_df.columns
+
+for _, row in summary_df.iterrows():
+    city = row.get("City", "Unknown")
+    strat = row.get("Stratification", "Unknown")
+    sig = row.get("Significant?", False)
+
+    risk = row[risk_col] if has_risk else None
+
+    if sig:
+        print(f"{city} – {strat}:")
+        print("Log-rank test indicates significant differences (p < 0.05).")
+
+        if has_risk and pd.notna(risk):
+            print(f"Higher delay-risk group (longer tail at 60 min): {risk}.")
+
+        print("Operational insight: Differences suggest temporal variation in response performance.")
+        print("Check whether curves diverge early (general speed) or mainly in the tail (extreme delays).")
+        print("")
+    else:
+        print(f"{city} – {strat}: No statistically significant differences detected.\n")
 
