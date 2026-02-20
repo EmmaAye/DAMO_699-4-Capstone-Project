@@ -15,8 +15,8 @@ df = df.filter(col("response_minutes").isNotNull())
 feature_cols = ['hour', 'day_of_week', 'calls_past_30min', 'unified_alarm_level']
 assembler = VectorAssembler(inputCols=feature_cols, outputCol="features")
 
-# 3. Model: GBT for Continuous Prediction
-# Note: Predicts response_minutes to compare vs average (RQ5)
+# 3. Baseline regression model for response time.
+# Tail-risk proxy evaluated via predicted P90 comparison.
 gbt = GBTRegressor(labelCol="response_minutes", featuresCol="features", maxIter=20)
 
 # 4. Training
@@ -26,12 +26,33 @@ model_tail = pipeline_tail.fit(train_df)
 
 # 5. Evaluation for RQ5
 predictions = model_tail.transform(test_df)
+evaluator_rmse = RegressionEvaluator(
+    labelCol="response_minutes",
+    predictionCol="prediction",
+    metricName="rmse"
+)
+print("RMSE:", evaluator_rmse.evaluate(predictions))
+
+evaluator_mae = RegressionEvaluator(
+    labelCol="response_minutes",
+    predictionCol="prediction",
+    metricName="mae"
+)
+print("MAE:", evaluator_mae.evaluate(predictions))
+
+evaluator_r2 = RegressionEvaluator(
+    labelCol="response_minutes",
+    predictionCol="prediction",
+    metricName="r2"
+)
+print("R2:", evaluator_r2.evaluate(predictions))
 # We look for high predictions (P90) vs the actual mean
 predictions.createOrReplaceTempView("results")
 comparison = spark.sql("""
     SELECT 
         AVG(response_minutes) as actual_mean,
-        PERCENTILE(prediction, 0.90) as predicted_p90
+        percentile_approx(response_minutes, 0.90) as actual_p90,
+        percentile_approx(prediction, 0.90) as predicted_p90
     FROM results
 """)
 comparison.show()
