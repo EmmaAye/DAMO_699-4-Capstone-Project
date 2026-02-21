@@ -194,21 +194,21 @@ def plot_km_and_test(df_spark, city_name, group_col, strat_label, group_order=No
 
 
 # %%
-results = []
+# results = []
 
 hour_order = ["Night","Morning","Afternoon","Evening"]
 season_order = ["winter","spring","summer","fall"]
 dow_order = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
 
-# Toronto
-results.append(plot_km_and_test(df_to, "Toronto", "hour_group", "Hour", hour_order))
-results.append(plot_km_and_test(df_to, "Toronto", "season", "Season", season_order))
-results.append(plot_km_and_test(df_to, "Toronto", "day_of_week_name", "Day of Week", dow_order))
+# Plot Toronto
+plot_km_and_test(df_to, "Toronto", "hour_group", "Hour", hour_order)
+(plot_km_and_test(df_to, "Toronto", "season", "Season", season_order))
+(plot_km_and_test(df_to, "Toronto", "day_of_week_name", "Day of Week", dow_order))
 
-# NYC
-results.append(plot_km_and_test(df_nyc, "NYC", "hour_group", "Hour", hour_order))
-results.append(plot_km_and_test(df_nyc, "NYC", "season", "Season", season_order))
-results.append(plot_km_and_test(df_nyc, "NYC", "day_of_week_name", "Day of Week", dow_order))
+# PLot NYC
+(plot_km_and_test(df_nyc, "NYC", "hour_group", "Hour", hour_order))
+(plot_km_and_test(df_nyc, "NYC", "season", "Season", season_order))
+(plot_km_and_test(df_nyc, "NYC", "day_of_week_name", "Day of Week", dow_order))
 
 
 # %%
@@ -241,11 +241,11 @@ def logrank_summary(df_spark, city, strat_col):
 
     # Safe label mapping
     if strat_col == "hour_group":
-        label = "hour"
+        label = "Hour"
     elif strat_col == "season":
-        label = "season"
+        label = "Season"
     elif strat_col in ["day_of_week", "day_of_week_norm", "day_of_week_name"]:
-        label = "day of week"
+        label = "Day of Week"
     else:
         label = strat_col
 
@@ -265,15 +265,16 @@ results = []
 
 results.append(logrank_summary(df_to,  "Toronto", "hour_group"))
 results.append(logrank_summary(df_to,  "Toronto", "season"))
-results.append(logrank_summary(df_to,  "Toronto", "day_of_week"))
+results.append(logrank_summary(df_to,  "Toronto", "day_of_week_name"))
 
 results.append(logrank_summary(df_nyc, "NYC",     "hour_group"))
 results.append(logrank_summary(df_nyc, "NYC",     "season"))
-results.append(logrank_summary(df_nyc, "NYC",     "day_of_week"))
+results.append(logrank_summary(df_nyc, "NYC",     "day_of_week_name"))
 
 summary_df = pd.DataFrame(results)
 display(summary_df)
-summary_path = f"/Workspace/Shared/DAMO_699-4-Capstone-Project/output/tables/logrank_summary_within_city.csv"
+#summary_path = f"/Workspace/Shared/DAMO_699-4-Capstone-Project/output/tables/logrank_summary_within_city.csv"
+summary_path = f"/Workspace/Repos/jihirosan@gmail.com/damo_699-4-capstone-project/output/tables/logrank_summary_within_city.csv"
 summary_df.to_csv(summary_path, index=False)
 print("Saved summary:", summary_path)
 
@@ -284,7 +285,7 @@ print(summary_df.columns.tolist())
 # %%
 print("----- US4.2 Interpretation Summary -----\n")
 
-risk_col = "Higher-risk group (tail @60)"
+risk_col = "higher-risk group (tail @60)"
 has_risk = risk_col in summary_df.columns
 
 for _, row in summary_df.iterrows():
@@ -292,13 +293,13 @@ for _, row in summary_df.iterrows():
     strat = row["stratification"]
     pval = row["p_value"]
     sig  = row["significant"]
-    risk = row["higher-risk group (tail @60)"]
-
+    
     risk = row[risk_col] if has_risk else None
 
     if sig:
         print(f"{city} – {strat}:")
-        print("Log-rank test indicates significant differences (p < 0.05).")
+        p_txt = "< 1e-300" if pval == 0 else f"{pval:.3g}"
+        print(f"Log-rank test indicates significant differences (p = {p_txt}, α = {ALPHA}).")
 
         if has_risk and pd.notna(risk):
             print(f"Higher delay-risk group (longer tail at 60 min): {risk}.")
