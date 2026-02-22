@@ -701,9 +701,6 @@ print("Saved:", HR_OUT)
 print("Saved:", STATS_OUT)
 
 # %%
-META_OUT
-
-# %%
 META_OUT = f"{MODEL_DIR}/cox_meta_{LABEL}.json"
 
 nyc_meta = {
@@ -749,7 +746,7 @@ nyc_ph_test.summary.sort_values("p").head(20)
 
 # %%
 PH_OUT = f"{MODEL_DIR}/cox_ph_test_{LABEL}.csv"
-ph_test.summary.sort_values("p").to_csv(PH_OUT, index=True)
+nyc_ph_test.summary.sort_values("p").to_csv(PH_OUT, index=True)
 print("Saved:", PH_OUT)
 
 # %% [markdown]
@@ -962,5 +959,5 @@ tor_ph_test.summary.sort_values("p").head(20)
 
 # %%
 PH_OUT = f"{MODEL_DIR}/cox_ph_test_{LABEL}.csv"
-ph_test.summary.sort_values("p").to_csv(PH_OUT, index=True)
+tor_ph_test.summary.sort_values("p").to_csv(PH_OUT, index=True)
 print("Saved:", PH_OUT)

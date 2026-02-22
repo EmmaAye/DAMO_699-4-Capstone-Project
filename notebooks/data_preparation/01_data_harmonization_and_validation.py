@@ -56,6 +56,7 @@ NYC_GOLD_TABLE     = "workspace.capstone_project.nyc_fire_incidents_gold"
 toronto_gold = spark.table(TORONTO_GOLD_TABLE)
 
 print("Toronto Gold count:", toronto_gold.count())
+toronto_gold = toronto_gold.withColumn("season", F.lower(F.col("season")))
 
 display(toronto_gold.limit(5))
 
