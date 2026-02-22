@@ -1,0 +1,1 @@
+{"class":"org.apache.spark.ml.feature.FeatureHasher","timestamp":1771208415806,"sparkVersion":"4.1.0","uid":"FeatureHasher_f03a9bb1c663","paramMap":{"inputCols":["incident_category","season","unified_call_source","location_area"],"numFeatures":512,"outputCol":"categorical_features"},"defaultParamMap":{"numFeatures":262144,"outputCol":"FeatureHasher_f03a9bb1c663__output"}}

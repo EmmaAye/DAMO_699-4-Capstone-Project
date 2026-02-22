@@ -1,0 +1,1 @@
+{"class":"org.apache.spark.ml.feature.VectorAssembler","timestamp":1771216650784,"sparkVersion":"4.1.0","uid":"VectorAssembler_674c16451f50","paramMap":{"inputCols":["hour","day_of_week","calls_past_30min","unified_alarm_level"],"outputCol":"features"},"defaultParamMap":{"handleInvalid":"error","outputCol":"VectorAssembler_674c16451f50__output"}}

@@ -3,11 +3,11 @@ from pyspark.sql.functions import col, when, hour, year, dayofweek, month, count
 from pyspark.sql.window import Window
 
 @dlt.table(
-    name="nyc_fire_incidents_gold",
-    comment="Gold modeling feature table for NYC Fire analytics (incident-level)"
+    name="nyc_fire_incidents_gold_v2",
+    comment="Gold modeling feature table for NYC Fire analytics (incident-level, v2)"
 )
 # Ensuring data quality for the final features
-def nyc_fire_incidents_gold():
+def nyc_fire_incidents_gold_v2():
     
     # Citywide demand (remove partitionBy for system load)
     window_30 = Window.orderBy(unix_timestamp("INCIDENT_DATETIME")).rangeBetween(-1800, -1)
