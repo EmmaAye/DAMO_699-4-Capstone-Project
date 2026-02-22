@@ -1,7 +1,7 @@
-city,stratification,test,p_value,significant,higher-risk group (tail @60)
-Toronto,Hour,Log-rank,0.0,True,Afternoon
-Toronto,Season,Log-rank,9.941335226120106e-37,True,summer
-Toronto,Day of Week,Log-rank,1.0699735989918996e-54,True,Tuesday
-NYC,Hour,Log-rank,0.0,True,Afternoon
-NYC,Season,Log-rank,5.05896252407472e-08,True,fall
-NYC,Day of Week,Log-rank,1.2874904837816994e-131,True,Friday
+city,stratification,group_col,p_value,significant,higher_risk_group_tail
+Toronto,Hour,hour_group,0.0,True,Afternoon
+Toronto,Season,season,9.941335226120106e-37,True,summer
+Toronto,Day of Week,day_of_week_name,1.0699735989918996e-54,True,Tuesday
+NYC,Hour,hour_group,0.0,True,Afternoon
+NYC,Season,season,5.05896252407472e-08,True,fall
+NYC,Day of Week,day_of_week_name,1.2874904837816994e-131,True,Friday

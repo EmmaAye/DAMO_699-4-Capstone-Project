@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from typing import Iterable, Optional
+
+import pandas as pd
 from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark.sql import functions as F
 
@@ -10,25 +13,26 @@ def load_city_survival_spark(
     censor_threshold: float = 60.0,
     duration_col: str = "response_minutes",
     event_col: str = "event_indicator",
+    extra_cols: Optional[Iterable[str]] = None,
 ) -> SparkDataFrame:
     """
     Load survival columns from a Spark table and apply uniform right-censoring at censor_threshold.
 
-    Rules:
-      - keep rows where duration_original is not null and > 0
-      - event must be not null
-      - response_minutes = min(duration_original, censor_threshold)
-      - event_indicator = 1 only if duration_original <= threshold and event_original == 1 else 0
-
     Returns Spark DF with:
       - response_minutes
       - event_indicator
+      - plus any extra_cols requested (e.g., hour, season, day_of_week)
     """
+    extra_cols = list(extra_cols) if extra_cols else []
+    # avoid duplicates if caller accidentally includes these
+    extra_cols = [c for c in extra_cols if c not in [duration_col, event_col]]
+
     df = (
         spark.read.table(table_name)
         .select(
             F.col(duration_col).alias("duration_original"),
             F.col(event_col).alias("event_original"),
+            *[F.col(c) for c in extra_cols],
         )
         .where("duration_original is not null AND duration_original > 0 AND event_original is not null")
         .withColumn("response_minutes", F.least(F.col("duration_original"), F.lit(float(censor_threshold))))
@@ -39,7 +43,7 @@ def load_city_survival_spark(
                 F.lit(1),
             ).otherwise(F.lit(0)),
         )
-        .select("response_minutes", "event_indicator")
+        .drop("duration_original", "event_original")
     )
     return df
 
@@ -47,15 +51,15 @@ def load_city_survival_spark(
 def add_strata_columns(
     df_spark: SparkDataFrame,
     hour_col: str = "hour",
-    season_col: str = "season",
     dow_col: str = "day_of_week",
 ) -> SparkDataFrame:
     """
-    Adds stratification columns used in your US4.2 stratified KM notebook:
+    Adds stratification columns used in stratified KM:
       - hour_group: Night/Morning/Afternoon/Evening
       - day_of_week_name: Sunday..Saturday
 
-    Assumes df_spark contains hour, season, day_of_week columns already.
+    Assumes df_spark contains: hour, day_of_week.
+    (Season is kept as-is from the input DF.)
     """
     df = df_spark
 
@@ -77,6 +81,26 @@ def add_strata_columns(
         .when(F.col(dow_col) == 6, "Friday")
         .when(F.col(dow_col) == 7, "Saturday"),
     )
-
-    # Keep season as-is (your data already uses winter/spring/summer/fall)
     return df
+
+
+def prepare_city_df(
+    spark,
+    table_name: str,
+    censor_threshold: float = 60.0,
+) -> pd.DataFrame:
+    """
+    Convenience wrapper:
+      1) load + censor survival fields
+      2) bring in hour/season/day_of_week for stratification
+      3) add derived strata columns
+      4) return pandas for lifelines
+    """
+    df = load_city_survival_spark(
+        spark,
+        table_name=table_name,
+        censor_threshold=censor_threshold,
+        extra_cols=["hour", "season", "day_of_week"],
+    )
+    df = add_strata_columns(df, hour_col="hour", dow_col="day_of_week")
+    return df.toPandas()
