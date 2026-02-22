@@ -1,6 +1,4 @@
 """
-cox_hazard_lib.py
-
 Reusable Cox Proportional Hazards utilities for emergency response-time survival modeling.
 
 Project rules:
@@ -15,12 +13,10 @@ Dependencies:
   - pandas, numpy
   - pyspark
 """
-
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-
 from lifelines import CoxPHFitter
 from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark.sql.functions import col, when
@@ -197,38 +193,51 @@ def build_cox_design(
     - Drop missing predictors (numeric + categorical)
     - One-hot encoding
     - Drop low-frequency & low-variance dummy-like columns
-
     Returns:
       (cox_df, drop_report, reference_map)
     """
+    '''For categorical predictors, the most frequent category was used as the reference level to improve interpretability and stability of coefficient estimates. This choice does not affect model predictions or overall fit but provides clearer comparisons across incident types and temporal factors.'''
+    # -----------------------------
+    # 1) Spark -> pandas
+    # -----------------------------
     keep_cols = [duration_col, event_col] + list(numeric_cols) + list(categorical_cols)
     pdf = df_spark.select(*keep_cols).toPandas()
 
-    # Type coercion
+    # -----------------------------
+    # 2) Type coercion
+    # -----------------------------
     pdf[duration_col] = pd.to_numeric(pdf[duration_col], errors="coerce")
     pdf[event_col] = pd.to_numeric(pdf[event_col], errors="coerce")
     for c in numeric_cols:
         pdf[c] = pd.to_numeric(pdf[c], errors="coerce")
 
-    # Censor NULL duration
+    # -----------------------------
+    # 3) Censor NULL duration (core survival rule)
+    # -----------------------------
     null_dur = pdf[duration_col].isna()
     n_censored_from_null = int(null_dur.sum())
     if n_censored_from_null > 0:
         pdf.loc[null_dur, duration_col] = float(censor_time)
         pdf.loc[null_dur, event_col] = 0
 
-    # Validity filters
+    # -----------------------------
+    # 4) Validity filters (core survival rule)
+    # -----------------------------
     pdf = pdf[pdf[duration_col] > 0].copy()
     pdf = pdf[pdf[event_col].isin([0, 1])].copy()
 
-    # Drop missing predictors
+    # -----------------------------
+    # 5) Drop missing predictors only (keep censored rows!)
+    # -----------------------------
     pred_cols = list(numeric_cols) + list(categorical_cols)
     n_before_pred_drop = len(pdf)
     if pred_cols:
         pdf = pdf.dropna(subset=pred_cols).copy()
     n_rows_dropped_missing_predictors = n_before_pred_drop - len(pdf)
 
-    # Reference categories (most frequent)
+    # -------------------------------------------------
+    # 6) DETERMINE BASELINES FROM FREQUENCY
+    # -------------------------------------------------
     reference_map = determine_reference_levels(pdf, categorical_cols)
 
     # Force category ordering so baseline is most frequent
@@ -237,11 +246,15 @@ def build_cox_design(
         ordered = [ref] + [x for x in categories if x != ref]
         pdf[c] = pd.Categorical(pdf[c], categories=ordered)
 
-    # One-hot
+    # -----------------------------
+    # 7) One-hot encode categoricals
+    # -----------------------------
     if categorical_cols:
         pdf = pd.get_dummies(pdf, columns=categorical_cols, drop_first=drop_first)
 
-    # Drop rare/constant dummies
+    # -----------------------------
+    # 8) Drop rare/constant dummy columns (helpers)
+    # -----------------------------
     exclude = [duration_col, event_col]
     dummy_cols = identify_dummy_like_columns(pdf, exclude=exclude)
 
@@ -252,7 +265,9 @@ def build_cox_design(
         min_freq_abs=min_freq_abs,
         min_var=min_var,
     )
-
+    # -------------------------
+    # 9) Build drop report
+    # -------------------------
     drop_report = {
         "n_rows_final": int(len(pdf2)),
         "n_features_final": int(len(pdf2.columns)),
@@ -329,14 +344,19 @@ def run_cox_for_table(
     categorical_cols: list | None = None,
     censor_time: float = 60.0,
     penalizer: float = 0.1,
+    # dummy drop configs (passed into build_cox_design)
     min_freq_rate: float = 0.001,
     min_freq_abs: int = 50,
     min_var: float = 1e-8,
-) -> dict:
+)-> dict:
     """
-    Full pipeline per table:
+    Full pipeline:
       Spark load -> create time_bin -> build design (NULL duration censored @ censor_time)
       -> drop low-freq/low-var dummy columns -> fit Cox -> HR + stats
+
+    Default predictors:
+      numeric: calls_past_30min, calls_past_60min
+      categorical: time_bin, day_of_week, season, incident_category, unified_alarm_level
     """
     if numeric_cols is None:
         numeric_cols = ["calls_past_30min", "calls_past_60min"]
@@ -350,8 +370,10 @@ def run_cox_for_table(
             timebin_col,
         ]
 
+    # Ensure timebin_col appears only once
     categorical_cols = [c for c in categorical_cols if c != timebin_col] + [timebin_col]
 
+    # Spark base: load columns (time_bin is created, not loaded)
     df_base = load_cox_base_spark(
         spark,
         table_name=table_name,
@@ -364,7 +386,8 @@ def run_cox_for_table(
         timebin_col=timebin_col,
     )
 
-    cox_df, drop_report, reference_map = build_cox_design(
+    # Pandas design matrix + drop report
+    cox_df, drop_report, reference_map= build_cox_design(
         df_base,
         duration_col=duration_col,
         event_col=event_col,
@@ -377,6 +400,7 @@ def run_cox_for_table(
         min_var=min_var,
     )
 
+    # Fit Cox
     cph = fit_cox_model(cox_df, duration_col, event_col, penalizer=penalizer)
 
     return {

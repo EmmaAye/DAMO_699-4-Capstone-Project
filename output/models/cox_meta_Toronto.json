@@ -1,6 +1,6 @@
 {
-  "table_name": "workspace.capstone_project.nyc_model_ready",
-  "label": "NYC",
+  "table_name": "workspace.capstone_project.toronto_model_ready",
+  "label": "Toronto",
   "censor_time": 60.0,
   "penalizer": 0.1,
   "numeric_cols": [
@@ -22,9 +22,9 @@
     "time_bin": "Afternoon"
   },
   "drop_report": {
-    "n_rows_final": 1283156,
+    "n_rows_final": 361710,
     "n_features_final": 23,
-    "n_censored_from_null_duration": 372544,
+    "n_censored_from_null_duration": 12469,
     "n_rows_dropped_missing_predictors": 0,
     "reference_categories": {
       "day_of_week": 6,
@@ -33,7 +33,7 @@
       "unified_alarm_level": 1,
       "time_bin": "Afternoon"
     },
-    "min_count_threshold": 1283,
+    "min_count_threshold": 361,
     "min_var_threshold": 1e-08,
     "dropped_low_frequency": [
       "unified_alarm_level_3"
@@ -46,10 +46,10 @@
     "n_features_after_drop": 23
   },
   "fit_stats": {
-    "log_likelihood": -12212604.523207264,
-    "partial_aic": 24425251.046414528,
-    "concordance_index": 0.6595683532200382,
-    "n": 1283156
+    "log_likelihood": -4151324.5012830766,
+    "partial_aic": 8302691.002566153,
+    "concordance_index": 0.5669858813585518,
+    "n": 361710
   },
-  "created_at": "2026-02-21T17:44:07.644884"
+  "created_at": "2026-02-22T14:11:00.183885"
 }
