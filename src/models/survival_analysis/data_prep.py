@@ -26,6 +26,7 @@ def load_city_survival_spark(
     extra_cols = list(extra_cols) if extra_cols else []
     # avoid duplicates if caller accidentally includes these
     extra_cols = [c for c in extra_cols if c not in [duration_col, event_col]]
+    thr = F.lit(float(censor_threshold))
 
     df = (
         spark.read.table(table_name)
@@ -34,12 +35,23 @@ def load_city_survival_spark(
             F.col(event_col).alias("event_original"),
             *[F.col(c) for c in extra_cols],
         )
-        .where("duration_original is not null AND duration_original > 0 AND event_original is not null")
-        .withColumn("response_minutes", F.least(F.col("duration_original"), F.lit(float(censor_threshold))))
+        # event is always explicit 0/1 in model ready data
+        .where("event_original in (0,1)")
+        # duration must be > 0 when present; NULL means censored (keep it)
+        .where("duration_original is null OR duration_original > 0")
+        # duration: NULL => 60, else clip at 60
+        .withColumn(
+            "response_minutes",
+            F.when(F.col("duration_original").isNull(), thr)
+             .otherwise(F.least(F.col("duration_original"), thr))
+        )
+        # event: only true events when observed duration <= 60 and event_original==1
         .withColumn(
             "event_indicator",
             F.when(
-                (F.col("duration_original") <= censor_threshold) & (F.col("event_original") == 1),
+                F.col("duration_original").isNotNull()
+                & (F.col("duration_original") <= thr)
+                & (F.col("event_original") == 1),
                 F.lit(1),
             ).otherwise(F.lit(0)),
         )

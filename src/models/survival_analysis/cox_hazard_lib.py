@@ -221,6 +221,15 @@ def build_cox_design(
         pdf.loc[null_dur, event_col] = 0
 
     # -----------------------------
+    # 3.5) Administrative censoring beyond censor_time (core survival rule)
+    # -----------------------------
+    over = pdf[duration_col] > float(censor_time)
+    n_censored_from_over = int(over.sum())
+    if n_censored_from_over > 0:
+        pdf.loc[over, duration_col] = float(censor_time)
+        pdf.loc[over, event_col] = 0
+
+    # -----------------------------
     # 4) Validity filters (core survival rule)
     # -----------------------------
     pdf = pdf[pdf[duration_col] > 0].copy()

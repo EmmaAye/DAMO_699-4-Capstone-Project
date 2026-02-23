@@ -140,6 +140,22 @@ def fit_city(table_name: str, label: str):
 
 
 
+# %%
+spark.read.table(TORONTO_TABLE).selectExpr(
+    "sum(case when event_indicator is null then 1 else 0 end) as n_null_event"
+).show()
+
+# %%
+from pyspark.sql import functions as F
+spark.read.table(NYC_TABLE).select(
+    F.sum(F.when(F.col("event_indicator").isNull(), 1).otherwise(0)).alias("n_null_event")
+).show()
+
+# %%
+spark.read.table(NYC_TABLE).selectExpr(
+    "sum(case when event_indicator is null then 1 else 0 end) as n_null_event"
+).show()
+
 # %% [markdown]
 # ### 2.1 NYC
 
@@ -182,9 +198,9 @@ tor_runs = fit_city(TORONTO_TABLE, "Toronto")
 # %% [markdown]
 # | penalizer | log-likelihood (higher is better) | partial AIC (lower is better) | concordance (higher is better) |
 # | --------- | --------------------------------- | ----------------------------- | ------------------------------ |
-# | **0.1**   | **-4,151,324**                   | **8,302,691**                | **0.5669**                     |
-# | 0.5       | -4,154,786                       |8,309,614                    | 0.5656                         |
-# | 1.0       | -4,156,836                       |8,313,714                    | 0.5647                         |
+# | **0.1**   | **-4,151,260**                   | **8,302,562**                | **0.5669**                     |
+# | 0.5       | -4,154,721                       |8,309,485                    | 0.5656                         |
+# | 1.0       | -4,156,771                       |8,313,585                    | 0.5647                         |
 #
 # **Interpretation**:
 #
@@ -319,7 +335,7 @@ tor_final["hr_table"].sort_values("hazard_ratio", ascending=False).head(10)
 #
 # A Cox proportional hazards model was estimated to examine factors associated with first-unit arrival times in Toronto. Categorical variables were encoded using the most frequent category as the reference level (Medical incidents, alarm level 1, afternoon period, summer season, and the most common day of week). Hazard ratios therefore represent differences in arrival speed relative to a typical medical incident occurring under standard conditions.
 #
-# Overall model performance was moderate (concordance ≈ 0.57), indicating that while meaningful structure exists in Toronto response-time variation, predictive patterns are weaker than those observed in the NYC model. Among the predictors, **alarm severity and short-term demand intensity** were the most influential drivers of arrival speed. Incidents with alarm level 2 exhibited faster response compared with level 1 incidents (HR≈1.24), suggesting prioritization of higher-severity calls. Higher recent call volume also showed a measurable association with faster arrival (calls_past_60min HR≈1.05), likely reflecting heightened operational activity and resource deployment during busier periods.
+# Overall model performance was moderate (concordance ≈ 0.57), indicating that while meaningful structure exists in Toronto response-time variation, predictive patterns are weaker than those observed in the NYC model. Among the predictors, **alarm severity and short-term demand intensity** were the most influential drivers of arrival speed. Incidents with alarm level 2 exhibited faster response compared with level 1 incidents (HR≈1.24), suggesting prioritization of higher-severity calls. Higher recent call volume was associated with a modest increase in arrival hazard (HR≈1.05), suggesting that periods of elevated system activity may coincide with faster mobilization and dispatch responsiveness.
 #
 # Temporal factors demonstrated smaller but statistically significant effects. Compared with afternoon responses (baseline), evening and morning incidents showed slightly faster arrivals (HR≈1.02 and HR≈1.01, respectively), while seasonal and day-of-week variations were modest. Incident-type effects were present but less pronounced than in NYC; for example, non-structural fire incidents were only marginally faster than medical calls (HR≈1.03). These findings suggest that, in Toronto, **operational demand levels and scheduling factors play a more prominent role than incident type in shaping response-time variability**, and that differences across categories are comparatively moderate.
 #

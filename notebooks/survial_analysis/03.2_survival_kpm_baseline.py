@@ -123,5 +123,8 @@ validate_km(nyc_pd, km_nyc, "NYC")
 
 
 # %%
-print(baseline_report(km_to, km_nyc))
+print(baseline_report_text(km_to, km_nyc))
 
+
+# %% [markdown]
+# Beyond early response differences, NYC exhibits a substantially heavier upper tail within the 60-minute window, indicating a higher probability of extended delays compared to Toronto.
