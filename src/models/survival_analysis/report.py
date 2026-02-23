@@ -126,7 +126,18 @@ def within_city_summary_text(stat: dict, alpha: float = 0.05) -> str:
         lines.append("")  # blank line
 
     return "\n".join(lines)
-    
+
+def print_within_city_summary(summary_df, alpha: float = 0.05):
+    """
+    Print full US4.2 interpretation block using within_city_summary_text().
+    Keeps notebook clean (2-line call).
+    """
+    print("----- US4.2 Interpretation Summary -----\n")
+
+    for _, row in summary_df.iterrows():
+        print(within_city_summary_text(row.to_dict(), alpha=alpha))
+
+
 def baseline_report_text(km_to, km_nyc) -> str:
     """
     Baseline KM narrative for report section.

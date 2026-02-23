@@ -120,7 +120,7 @@ def km_plot_stratified(
 
     ax.set_title(title)
     ax.set_xlabel("Response Time (minutes)")
-    ax.set_ylabel("Survival Probability  P(T > t)")
+    ax.set_ylabel("Probability that the unit has not arrived yet")
     ax.set_xlim(0, censor_threshold)
     ax.set_ylim(0, 1.0)
     ax.grid(True)

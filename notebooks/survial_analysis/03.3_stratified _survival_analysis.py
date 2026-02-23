@@ -56,7 +56,8 @@ from src.models.survival_analysis import (
     prepare_city_df,
     km_plot_stratified,
     run_city_logrank_tests,
-    within_city_summary_text,
+    print_within_city_summary,
+    STRATA_SPECS,
 )
 
 # %% [markdown]
@@ -83,18 +84,6 @@ print("Saving tables to:", TABLE_DIR)
 
 # %% [markdown]
 # Arrange Columns
-
-# %%
-HOUR_ORDER   = ["Night", "Morning", "Afternoon", "Evening"]
-SEASON_ORDER = ["winter", "spring", "summer", "fall"]
-DOW_ORDER    = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-
-STRATA_SPECS = [
-    ("hour_group", "Hour", HOUR_ORDER),
-    ("season", "Season", SEASON_ORDER),
-    ("day_of_week_name", "Day of Week", DOW_ORDER),
-]
-
 
 # %% [markdown]
 # ## 2. Stratified Kaplan–Meier Plots
@@ -162,7 +151,5 @@ print("Saved summary:", summary_path)
 # ### Interpretation Summary
 
 # %%
-print("----- US4.2 Interpretation Summary -----\n")
 
-for _, row in summary_df.iterrows():
-    print(within_city_summary_text(row.to_dict(), alpha=ALPHA))
+print_within_city_summary(summary_df, alpha=ALPHA)
