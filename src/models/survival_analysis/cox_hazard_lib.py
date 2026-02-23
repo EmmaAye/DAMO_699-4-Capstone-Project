@@ -274,6 +274,25 @@ def build_cox_design(
         min_freq_abs=min_freq_abs,
         min_var=min_var,
     )
+
+    # -----------------------------
+    # 8.5) Sanity checks (admin censoring consistency)
+    # -----------------------------
+    # 1) Duration must be present and positive
+    assert pdf2[duration_col].notna().all(), "Cox design has NULL durations after preprocessing."
+    assert (pdf2[duration_col] > 0).all(), "Cox design has non-positive durations after preprocessing."
+
+    # 2) Event must be binary
+    bad_events = set(pd.unique(pdf2[event_col])) - {0, 1}
+    assert len(bad_events) == 0, f"Cox design has invalid event values: {bad_events}"
+
+    # 3) Administrative censoring at censor_time must hold
+    mx = float(pdf2[duration_col].max())
+    assert mx <= float(censor_time) + 1e-9, f"Max duration {mx} exceeds censor_time {censor_time}."
+
+    # 4) No 'fake events' at the censoring boundary due to clipping
+    n_fake = int(((pdf2[duration_col] == float(censor_time)) & (pdf2[event_col] == 1)).sum())
+    assert n_fake == 0, f"Found {n_fake} rows with duration==censor_time but event==1. Should be censored (event=0)."
     # -------------------------
     # 9) Build drop report
     # -------------------------

@@ -40,6 +40,7 @@ dbutils.library.restartPython()
 import os
 import json
 from datetime import datetime
+import pickle
 
 import pandas as pd
 from pyspark.sql import SparkSession
@@ -343,7 +344,7 @@ tor_final["hr_table"].sort_values("hazard_ratio", ascending=False).head(10)
 #
 
 # %% [markdown]
-# ## 4. Save results (optional)
+# ## 4. Save results
 # Saves:
 # - HR tables as CSV
 # - fit stats as CSV
@@ -357,6 +358,8 @@ def save_city_outputs(res, label: str, table_name: str, penalizer: float):
 
     res["hr_table"].to_csv(hr_out, index=False)
     pd.DataFrame([res["fit_stats"]]).to_csv(stats_out, index=False)
+    print("Saved:", hr_out)
+    print("Saved:", stats_out)
 
     meta = {
         "table_name": table_name,
@@ -373,16 +376,48 @@ def save_city_outputs(res, label: str, table_name: str, penalizer: float):
 
     with open(meta_out, "w") as f:
         json.dump(convert_numpy(meta), f, indent=2)
-
-    print("Saved:", hr_out)
-    print("Saved:", stats_out)
     print("Saved:", meta_out)
+    # --- Save reference row for baseline survival/hazard curves ---
+    ref_out = f"{CSV_DIR}/cox_reference_row_{label}.csv"
+
+    # Drop duration/event columns
+    X = res["cox_df"].drop(columns=["response_minutes", "event_indicator"])
+
+    # Build reference row:
+    # numeric -> median, dummies -> 0
+    ref_row = pd.DataFrame([X.median(numeric_only=True)])
+    ref_row = ref_row.reindex(columns=X.columns, fill_value=0)
+    ref_row.to_csv(ref_out, index=False)
+    print("Saved:", ref_out)
+    
 
 
 # %%
 if DO_SAVE:
     save_city_outputs(nyc_final, "NYC", NYC_TABLE, BEST_PENALIZER)
     save_city_outputs(tor_final, "Toronto", TORONTO_TABLE, BEST_PENALIZER)
+
+# %% [markdown]
+# **Save Model**
+
+# %%
+with open(f"{MODEL_DIR}/cph_NYC.pkl", "wb") as f:
+    pickle.dump(nyc_final["model"], f)
+
+with open(f"{MODEL_DIR}/cph_Toronto.pkl", "wb") as f:
+    pickle.dump(tor_final["model"], f)
+
+print("Saved Cox models to:", MODEL_DIR)
+
+# %%
+with open(f"{MODEL_DIR}/cph_NYC.pkl", "rb") as f:
+    cph_nyc = pickle.load(f)
+
+with open(f"{MODEL_DIR}/cph_Toronto.pkl", "rb") as f:
+    cph_tor = pickle.load(f)
+
+# %%
+print(type(cph_nyc), type(cph_tor))
 
 
 # %% [markdown]

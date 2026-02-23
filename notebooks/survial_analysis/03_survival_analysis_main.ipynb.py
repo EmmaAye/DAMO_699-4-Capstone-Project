@@ -8,76 +8,64 @@
 #       jupytext_version: 1.19.1
 # ---
 
-# %%
-import sys
-
-SRC_PATH = "/Workspace/Repos/jihirosan@gmail.com/damo_699-4-capstone-project/src"
-if SRC_PATH not in sys.path:
-    sys.path.append(SRC_PATH)
-
-# %%
-from src.models.survival_analysis.censoring import apply_uniform_censoring_pandas
-
-# %%
-from src.models.survival_analysis import (
-    load_city_survival_spark,
-    fit_km,
-    km_overlay_plot,
-    survival_at_thresholds,
-    binned_hazard,
-    hazard_overlay_plot,
-    cross_city_logrank,
-    cross_city_summary_text,
-    apply_uniform_censoring_pandas,
-)
+# %% [markdown]
+# # Survival Analysis — RQ1–RQ5 (Toronto vs NYC)
+#
+# This notebook uses **one consistent survival framework** (uniform 60-minute administrative censoring) to answer the research questions:
+#
+# - **RQ1 (Temporal):** hour / day-of-week / season effects → stratified KM + log-rank (+ Cox results read-in, if available)
+# - **RQ2 (Demand):** calls_past_{30,60}min effects → Cox results read-in
+# - **RQ3 (Cross-city):** Toronto vs NYC KM overlay + log-rank + hazard comparison
+# - **RQ4 (Drivers):** compare whether temporal+demand explain delay risk more than incident type → Cox results read-in (optional)
+# - **RQ5 (Tail risk):** survival-based probabilities at thresholds (e.g., 10/15/30/60) vs averages
+#
+# **Important consistency rule:** because NYC is capped at 60 minutes, all cross-city survival analyses are interpreted **within 0–60 minutes** using:
+# - duration = `response_minutes` (NULL → 60; >60 → 60)
+# - event = `event_indicator` (event=1 only if observed within 60; otherwise 0)
+#
+# _Last updated: 2026-02-23_
 
 # %%
 # %pip install lifelines
 
-# %% [markdown]
-# # US4.5: Cross-City Survival Comparison
-#
-# This notebook compares response-time survival patterns between **Toronto** and **NYC** to identify differences in delay risk, service reliability, and time-to-completion behaviour.
-#
-# The analysis:
-# - Applies a consistent censoring threshold and event definition across both cities  
-# - Builds Kaplan–Meier survival curves for direct comparison  
-# - Compares hazard patterns to understand where delay risk differs  
-# - Uses a statistical test (log-rank) to assess whether differences are meaningful  
-#
-# Outputs include cross-city survival plots, hazard comparisons, statistical results, and a short interpretation for reporting and dashboard use.
+# %%
+# %%
+# Databricks sometimes needs this after installs
+dbutils.library.restartPython()
 
 # %% [markdown]
-# ## Setup and Config
+# ## 0. Setup
 
 # %%
-import os, json
+try:
+    spark
+except NameError:
+    from pyspark.sql import SparkSession
+    spark = SparkSession.builder.getOrCreate()
+
+import os, sys
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
-from lifelines import KaplanMeierFitter
+import importlib
 
-# %% [markdown]
-# ## 1. Data Preparation & Survival Modeling
-#
-# ### Goal
-# Prepare aligned survival datasets for Toronto and NYC so curves can be compared directly.
-#
-# ### What this Section does
-# - Loads Toronto + NYC survival CSVs
-# - Checks required columns exist
-# - Applies the SAME censoring threshold and event definition to both cities
-# - Combines into one analysis-ready dataset with a `city` column
-# - Fits Kaplan–Meier models for each city
-# - Exports combined dataset + KM curve points for dashboarding
-#
-# ## Inputs needed
-# - Toronto survival CSV (must include duration + event columns)
-# - NYC survival CSV (must include duration + event columns)
-#
-# ## Outputs
-# - `outputs/us45/combined_survival_us45.csv`
-# - `outputs/us45/km_curves.csv`
+REPO_ROOT = "/Workspace/Repos/jihirosan@gmail.com/damo_699-4-capstone-project"
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
 
-# %% [markdown]
-# Get User Config
+PACKAGE_NAME = "src.models.survival_analysis"   # this must be the folder name in your repo
+
+survival_lib = importlib.import_module(PACKAGE_NAME)
+
+from survival_lib import (
+    prepare_city_df,
+    fit_km,
+    km_overlay_plot,
+    survival_at_thresholds,
+    validate_km,
+    binned_hazard,
+    hazard_overlay_plot,
+    cross_city_logrank,
+    cross_city_summary_text,
+)
