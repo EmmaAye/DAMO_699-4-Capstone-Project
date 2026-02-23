@@ -30,6 +30,13 @@ rf = RandomForestClassifier(
 )
 model = rf.fit(df_ml)
 
+# Compute historical averages for missing columns
+historical_stats = df_ml.groupBy("hour", "day_of_week").agg(
+    F.avg("calls_past_30min").alias("calls_past_30min"),
+    F.avg("calls_past_60min").alias("calls_past_60min"),
+    F.first("unified_alarm_level").alias("unified_alarm_level")
+)
+
 # 4. Generate "Next-Day" Forecast Slots
 last_ts = df.select(F.max("incident_datetime")).collect()[0][0]
 forecast_data = []
@@ -38,15 +45,15 @@ for i in range(1, 25):
     forecast_data.append((
         next_time, 
         next_time.hour, 
-        next_time.weekday(), 
-        1,   # Assume base alarm level 1 for forecast
-        10,  # Estimated baseline call volume
-        20   # Estimated baseline call volume
+        (next_time.weekday() + 1) % 7 + 1
     ))
 forecast_base_df = spark.createDataFrame(
     forecast_data, 
-    ["forecast_timestamp", "hour", "day_of_week", "unified_alarm_level", "calls_past_30min", "calls_past_60min"]
+    ["forecast_timestamp", "hour", "day_of_week"]
 )
+
+# Join historical averages to supply required columns
+forecast_base_df = forecast_base_df.join(historical_stats, ["hour", "day_of_week"], "left")
 
 # Assemble features for forecast data
 forecast_base_ml = assembler.transform(forecast_base_df)

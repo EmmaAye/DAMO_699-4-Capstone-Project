@@ -58,4 +58,4 @@ comparison = spark.sql("""
 comparison.show()
 
 # Save Model
-model_tail.write().overwrite().save("/Volumes/workspace/capstone_project/models/tail_risk_model")
+model_tail.write().overwrite().save("/Volumes/workspace/capstone_project/models/tail_risk_model_nyc")
