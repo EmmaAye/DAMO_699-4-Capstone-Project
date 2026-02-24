@@ -39,13 +39,26 @@
 # ## 1. Import and Load Tables
 
 # %%
+spark.sql("SELECT current_catalog() AS catalog, current_schema() AS schema").show(truncate=False)
+
+# %%
 from pyspark.sql import functions as F
 from pyspark.sql import Window
 from pyspark.sql import DataFrame
 
+CATALOG = "workspace"
+SCHEMA  = "capstone_project"
+
+CATALOG = "workspace"
+SCHEMA  = "capstone_project"
+
+TORONTO_GOLD_TABLE = f"{CATALOG}.{SCHEMA}.tfs_incidents_gold"
+NYC_GOLD_TABLE     = f"{CATALOG}.{SCHEMA}.nyc_fire_incidents_gold"
+
+
 # --- DATA TABLE DIRECTORIES ---
-TORONTO_GOLD_TABLE = "workspace.capstone_project.tfs_incidents_gold"   
-NYC_GOLD_TABLE     = "workspace.capstone_project.nyc_fire_incidents_gold"
+#TORONTO_GOLD_TABLE = "workspace.capstone_project.tfs_incidents_gold"   
+#NYC_GOLD_TABLE     = "workspace.capstone_project.nyc_fire_incidents_gold"
 
 
 
