@@ -1,3 +1,14 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.19.1
+# ---
+
+# %%
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 from pyspark.ml.classification import RandomForestClassifier
@@ -32,10 +43,17 @@ rf = RandomForestClassifier(
 )
 model = rf.fit(df_ml)
 
+row = (
+    df_ml.groupBy("unified_alarm_level").count()
+        .orderBy(F.desc("count"))
+        .first()
+)
+overall_alarm = row[0] if row is not None else 1
+
 historical_stats = df_ml.groupBy("hour", "day_of_week").agg(
     F.avg("calls_past_30min").alias("calls_past_30min"),
     F.avg("calls_past_60min").alias("calls_past_60min"),
-    F.mode("unified_alarm_level").alias("unified_alarm_level")
+    F.lit(overall_alarm).alias("unified_alarm_level")
 )
 
 # 4. Generate "Next-Day" Forecast Slots
