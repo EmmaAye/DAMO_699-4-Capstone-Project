@@ -58,6 +58,7 @@ from src.models.survival_analysis import (
     run_city_logrank_tests,
     print_within_city_summary,
     STRATA_SPECS,
+    DEFAULT_CENSOR_TIME,
 )
 
 # %% [markdown]
@@ -70,7 +71,7 @@ from src.models.survival_analysis import (
 TORONTO_TABLE = "workspace.capstone_project.toronto_model_ready"
 NYC_TABLE     = "workspace.capstone_project.nyc_model_ready"
 
-CENSOR_THRESHOLD = 60.0
+CENSOR_THRESHOLD = DEFAULT_CENSOR_TIME
 ALPHA = 0.05
 
 SAVE_DIR = "/Workspace/Shared/DAMO_699-4-Capstone-Project/output/graphs"

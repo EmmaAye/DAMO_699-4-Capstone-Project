@@ -30,6 +30,9 @@ except ImportError:
     dbutils.library.restartPython()
 
 # %%
+dbutils.library.restartPython()
+
+# %%
 import sys
 import os
 import matplotlib.pyplot as plt

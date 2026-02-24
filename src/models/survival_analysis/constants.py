@@ -7,3 +7,7 @@ STRATA_SPECS = [
     ("season", "Season", SEASON_ORDER),
     ("day_of_week_name", "Day of Week", DOW_ORDER),
 ]
+
+DEFAULT_THRESHOLDS = (8, 10, 30, 60)
+
+DEFAULT_CENSOR_TIME = 60.0

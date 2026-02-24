@@ -444,3 +444,95 @@ def run_cox_for_table(
         "categorical_cols": categorical_cols,
         "reference_categories": reference_map,
     }
+
+    import numpy as np
+import pandas as pd
+
+
+def summarize_driver_strength(
+    hr_df: pd.DataFrame,
+    city: str,
+    alpha: float = 0.05,
+    top_k: int = 5,
+):
+    """
+    Summarize Cox driver strength by feature group using HR distance from 1.
+
+    Parameters
+    ----------
+    hr_df : DataFrame
+        Cox hazard-ratio table (hr_to / hr_nyc)
+        Must contain:
+            - covariate
+            - hazard_ratio
+        Optional:
+            - p
+
+    city : str
+        City label ("Toronto", "NYC")
+
+    alpha : float
+        Optional significance filter. If None → no filtering.
+
+    top_k : int
+        Number of strongest effects used for stable average.
+
+    Returns
+    -------
+    DataFrame summary per bucket:
+        Demand
+        Temporal
+        Incident/Severity
+    """
+
+    def bucket(name: str) -> str:
+        if name.startswith("calls_past"):
+            return "Demand"
+        if name.startswith(("time_bin", "hour_group", "day_of_week", "season")):
+            return "Temporal"
+        if name.startswith(("incident_category", "unified_alarm_level")):
+            return "Incident/Severity"
+        return "Other"
+
+    df = hr_df.copy()
+
+    if alpha is not None and "p" in df.columns:
+        df = df[df["p"] < alpha].copy()
+
+    df["covariate"] = df["covariate"].astype(str)
+    df["hazard_ratio"] = pd.to_numeric(df["hazard_ratio"], errors="coerce")
+
+    df = df.replace([np.inf, -np.inf], np.nan)
+    df = df.dropna(subset=["hazard_ratio"])
+    df = df[df["hazard_ratio"] > 0]
+
+    df["bucket"] = df["covariate"].apply(bucket)
+
+    # distance from 1
+    hr = df["hazard_ratio"].to_numpy()
+    df["effect_size"] = np.maximum(hr, 1.0 / hr)
+
+    base = (
+        df.groupby("bucket")["effect_size"]
+          .agg(count="count", max_effect="max", median_effect="median")
+          .reset_index()
+    )
+
+    topk_df = (
+        df.sort_values("effect_size", ascending=False)
+          .groupby("bucket")
+          .head(top_k)
+    )
+
+    topk = (
+        topk_df.groupby("bucket")["effect_size"]
+               .mean()
+               .reset_index()
+               .rename(columns={"effect_size": f"top{top_k}_mean"})
+    )
+
+    out = base.merge(topk, on="bucket", how="left")
+    out["city"] = city
+    out = out.sort_values("max_effect", ascending=False)
+
+    return out

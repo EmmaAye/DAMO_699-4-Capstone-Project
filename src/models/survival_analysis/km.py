@@ -3,6 +3,8 @@ from __future__ import annotations
 import numpy as np
 import matplotlib.pyplot as plt
 from lifelines import KaplanMeierFitter
+from .constants import DEFAULT_THRESHOLDS, DEFAULT_CENSOR_TIME
+import pandas as pd
 
 
 def fit_km(df, label: str, duration_col="response_minutes", event_col="event_indicator"):
@@ -16,7 +18,7 @@ def km_plot_single_city(
     title: str,
     censor_threshold: float | None = None,
 ):
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(6, 4))
     ax = plt.gca()
     km.plot_survival_function(ax=ax, ci_show=False)
 
@@ -37,7 +39,7 @@ def km_overlay_plot(
     km_a,
     km_b,
     censor_threshold: float,
-    thresholds=(10, 30, 60),
+    thresholds=DEFAULT_THRESHOLDS,
     title="Kaplan–Meier Survival — Cross-City",
 ):
     plt.figure(figsize=(8, 6))
@@ -61,11 +63,44 @@ def km_overlay_plot(
     return ax
 
 
-def survival_at_thresholds(km, thresholds=(10, 30, 60)):
-    return {t: float(km.predict(t)) for t in thresholds}
+def survival_at_thresholds(km, thresholds=DEFAULT_THRESHOLDS):
+    """
+    Given a *fitted* KaplanMeierFitter, return a report-ready DataFrame
+    with S(t) and P(arrived by t) = 1 - S(t).
+    """
+    rows = []
+    for t in thresholds:
+        s = float(km.predict(t))
+        rows.append({
+            "threshold_min": t,
+            "survival_prob_S(t)": s,
+            "prob_arrived_by_t": 1 - s
+        })
+
+    return pd.DataFrame(rows)
+
+def threshold_summary(df_spark_or_pdf, thresholds=DEFAULT_THRESHOLDS,
+                      duration_col="response_minutes",
+                      event_col="event_indicator",
+                      city_label=None):
+    
+    # Spark → pandas if needed
+    if hasattr(df_spark_or_pdf, "toPandas"):
+        pdf = df_spark_or_pdf.select(duration_col, event_col).toPandas()
+    else:
+        pdf = df_spark_or_pdf[[duration_col, event_col]].copy()
+
+    km = KaplanMeierFitter().fit(pdf[duration_col], pdf[event_col])
+
+    out = survival_at_thresholds(km, thresholds)
+
+    if city_label:
+        out.insert(0, "city", city_label)
+
+    return out
 
 
-def validate_km(df_pd, kmf, city_name, t_values=(5, 10, 15), duration_col="response_minutes", event_col="event_indicator"):
+def validate_km(df_pd, kmf, city_name, t_values= DEFAULT_THRESHOLDS, duration_col="response_minutes", event_col="event_indicator"):
     """
     Your validation block from baseline notebook:
     - compares KM S(t) vs empirical survival among observed events
@@ -92,7 +127,7 @@ def km_plot_stratified(
     df_pd,
     group_col: str,
     title: str,
-    censor_threshold: float = 60.0,
+    censor_threshold: float = DEFAULT_CENSOR_TIME,
     group_order=None,
     duration_col="response_minutes",
     event_col="event_indicator",

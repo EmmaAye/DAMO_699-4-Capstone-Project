@@ -4,15 +4,41 @@ import pandas as pd
 from .constants import STRATA_SPECS
 
 
-def cross_city_logrank(to_df, nyc_df, duration_col="response_minutes", event_col="event_indicator"):
-    res = logrank_test(
-        to_df[duration_col],
-        nyc_df[duration_col],
-        event_observed_A=to_df[event_col],
-        event_observed_B=nyc_df[event_col],
-    )
-    return {"test_statistic": float(res.test_statistic), "p_value": float(res.p_value)}
+def cross_city_logrank(to_df, nyc_df,
+                       duration_col="response_minutes",
+                       event_col="event_indicator",
+                       label_a="Toronto",
+                       label_b="NYC"):
+    # assumes to_df and nyc_df are pandas DataFrames
+    a = to_df[[duration_col, event_col]].dropna()
+    b = nyc_df[[duration_col, event_col]].dropna()
 
+    # ensure numeric/binary
+    a = a[a[event_col].isin([0,1])]
+    b = b[b[event_col].isin([0,1])]
+
+    res = logrank_test(
+        a[duration_col].values,
+        b[duration_col].values,
+        event_observed_A=a[event_col].values,
+        event_observed_B=b[event_col].values,
+    )
+
+    p = float(res.p_value)
+    p_txt = "< 1e-300" if p == 0.0 else f"{p:.3g}"
+
+    return {
+        "test": "log-rank",
+        "group_A": label_a,
+        "group_B": label_b,
+        "test_statistic": float(res.test_statistic),
+        "p_value": p,
+        "p_value_text": p_txt,
+        "n_A": int(len(a)),
+        "n_B": int(len(b)),
+        "events_A": int(a[event_col].sum()),
+        "events_B": int(b[event_col].sum()),
+    }
 
 def within_city_multivariate_logrank(
     df_pd,
