@@ -1,0 +1,7 @@
+city,strat,p_value
+Toronto,hour_group,0.0
+Toronto,day_of_week,3.6000466169448934e-31
+Toronto,season,7.348413184843523e-20
+NYC,hour_group,0.0
+NYC,day_of_week,9.596634084353653e-21
+NYC,season,2.6715849655076087e-84

@@ -1,3 +1,14 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.19.1
+# ---
+
+# %%
 # 1: Setup and Imports
 import gc
 from pyspark.ml.feature import VectorAssembler, FeatureHasher
@@ -100,3 +111,4 @@ model.write().overwrite().save(save_path)
 # Clean up memory
 del model
 gc.collect()
+

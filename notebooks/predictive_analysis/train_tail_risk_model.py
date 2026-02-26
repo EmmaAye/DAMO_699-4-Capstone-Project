@@ -1,3 +1,14 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.19.1
+# ---
+
+# %%
 from pyspark.sql import SparkSession
 from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.regression import GBTRegressor
@@ -58,4 +69,4 @@ comparison = spark.sql("""
 comparison.show()
 
 # Save Model
-model_tail.write().overwrite().save("/Volumes/workspace/capstone_project/models/tail_risk_model")
+model_tail.write().overwrite().save("/Volumes/workspace/capstone_project/models/tail_risk_model_nyc")
