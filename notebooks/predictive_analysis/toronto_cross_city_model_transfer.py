@@ -31,6 +31,7 @@ MAX_PER_CLASS = 200_000
 
 SAVE_RESULTS_TABLE = "workspace.capstone_project.transfer_test_nyc_to_toronto_sprint7"
 
+
 def load_and_prepare(table_name: str, city_name: str):
     df = spark.table(table_name).filter(col(LABEL_COL).isNotNull())
     df = df.withColumn(LABEL_COL, col(LABEL_COL).cast("int"))
