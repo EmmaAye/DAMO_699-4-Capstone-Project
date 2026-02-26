@@ -17,7 +17,12 @@ assembler = VectorAssembler(inputCols=feature_cols, outputCol="features")
 
 # 3. Baseline regression model for response time.
 # Tail-risk proxy evaluated via predicted P90 comparison.
-gbt = GBTRegressor(labelCol="response_minutes", featuresCol="features", maxIter=20)
+gbt = GBTRegressor(
+    labelCol="response_minutes",
+    featuresCol="features",
+    maxIter=20,
+    seed=42
+)
 
 # 4. Training
 train_df, test_df = df.randomSplit([0.8, 0.2], seed=42)
