@@ -20,7 +20,11 @@ hasher = FeatureHasher(inputCols=categorical_cols, outputCol="categorical_featur
 # Feature Assembly
 numeric_cols = ['hour', 'day_of_week', 'month', 'year', 'unified_alarm_level',
                 'calls_past_30min', 'calls_past_60min']
-assembler = VectorAssembler(inputCols=numeric_cols + ["categorical_features"], outputCol="features")
+assembler = VectorAssembler(
+    inputCols=numeric_cols + ["categorical_features"],
+    outputCol="features",
+    handleInvalid="keep"
+)
 
 # 3: Training with Downsampling
 train_df, test_df = df.randomSplit([0.8, 0.2], seed=42)
