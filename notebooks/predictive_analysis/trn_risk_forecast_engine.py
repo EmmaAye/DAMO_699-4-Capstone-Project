@@ -77,6 +77,12 @@ forecast_enriched_df = forecast_base_df.join(
     "calls_past_60min"
 )
 
+forecast_enriched_df = forecast_enriched_df.fillna({
+    "calls_past_30min": 0.0,
+    "calls_past_60min": 0.0,
+    "unified_alarm_level": 1
+})
+
 # Assemble features for forecast data 
 forecast_final_ml = assembler.transform(forecast_enriched_df)
 
