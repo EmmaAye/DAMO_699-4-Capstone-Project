@@ -7,7 +7,7 @@
 # - Pinball loss computed
 # - Validation plots saved (PNG)
 # ============================================
-
+#%pip install lightgbm
 # 1) Setup and Imports
 import os, gc
 import numpy as np
@@ -49,6 +49,7 @@ LGB_PARAMS = dict(
     colsample_bytree=0.9,
     random_state=SEED
 )
+
 
 # 3) Helpers
 def pinball_loss(y_true, y_pred, q):
