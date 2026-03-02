@@ -1,20 +1,13 @@
-# ---
-# jupyter:
-#   jupytext:
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.19.1
-# ---
+# ============================================
+# New Cell
+# ============================================
 
-# %%
-# #!pip install lightgbm shap
+!pip install lightgbm shap
 
-# %% [markdown]
-# #### Config + outputs folder (same structure as earlier)
+# ============================================
+# New Cell
+# ============================================
 
-# %%
 import os
 
 CITY = "Toronto"
@@ -40,10 +33,10 @@ os.makedirs(OUT_DIR, exist_ok=True)
 
 print(" Saving outputs to:", OUT_DIR)
 
-# %% [markdown]
-# #### 1. Load data + label sanity check
+# ============================================
+# New Cell
+# ============================================
 
-# %%
 from pyspark.sql.functions import col
 
 df = (
@@ -68,10 +61,10 @@ if len(labels) < 2:
 
 print(f"{CITY} label check passed — both classes exist.")
 
-# %% [markdown]
-# #### Train SHAP-friendly LightGBM model (Toronto)
+# ============================================
+# New Cell
+# ============================================
 
-# %%
 import numpy as np
 import pandas as pd
 import lightgbm as lgb
@@ -137,10 +130,10 @@ Story:
 Now we compute SHAP values to explain which features push delay risk up/down.
 """)
 
-# %% [markdown]
-# #### 3. Compute SHAP values (Toronto) + shape check
+# ============================================
+# New Cell
+# ============================================
 
-# %%
 import shap
 import numpy as np
 
@@ -181,10 +174,10 @@ Story:
 We can now tell a clear story of what increases delay risk and what reduces it.
 """)
 
-# %% [markdown]
-# #### 3.1 Feature importance ranking + CSV export (JIRA schema)
+# ============================================
+# New Cell
+# ============================================
 
-# %%
 print(f"""
 Step 4 — Feature importance ranking ({CITY})
 
@@ -204,10 +197,15 @@ imp[["feature", "mean_abs_shap", "rank"]].to_csv(csv_path, index=False)
 print("Saved CSV:", csv_path)
 display(spark.createDataFrame(imp.head(12)))
 
-# %% [markdown]
-#  Professional plot styling + reusable plot helpers (JIRA requirement)
+# ============================================
+# New Cell
+# ============================================
 
-# %%
+# ============================================
+# Toronto — Fix: Keep only ONE save_fig definition
+# File: notebooks/shap/trn_shap_model.ipynb
+# ============================================
+
 import matplotlib.pyplot as plt
 import shap
 
@@ -228,103 +226,29 @@ def save_fig(fig, path, show=True):
     plt.close(fig)
 
 def plot_shap_summary_pretty(shap_matrix, X, title, max_display=15):
-    fig = plt.figure(figsize=(12, 7))
+    plt.figure(figsize=(12, 7))
     shap.summary_plot(shap_matrix, X, show=False, max_display=max_display)
     plt.title(title)
-    return fig
+    return plt.gcf()
 
 def plot_shap_bar_pretty(shap_matrix, X, title, max_display=15):
-    fig = plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(10, 6))
     shap.summary_plot(shap_matrix, X, plot_type="bar", show=False, max_display=max_display)
     plt.title(title)
-    return fig
+    return plt.gcf()
 
-def plot_shap_dependence_pretty(shap_matrix, X, feature, title, interaction_index=None):
-    fig = plt.figure(figsize=(11, 6))
-    shap.dependence_plot(feature, shap_matrix, X, interaction_index=interaction_index, show=False)
+def plot_shap_dependence_pretty(shap_matrix, X, feature, title):
+    plt.figure(figsize=(11, 6))
+    shap.dependence_plot(feature, shap_matrix, X, show=False)
     plt.title(title)
-    return fig
+    return plt.gcf()
 
-print("""
-Plot functions ready (JIRA compliant)
+print("Toronto plotting helpers ready (single save_fig, return fig).")
 
-Story:
-These functions RETURN figure objects, making them reusable for:
-- reports
-- dashboards
-- cross-city comparison
-""")
+# ============================================
+# New Cell
+# ============================================
 
-# %% [markdown]
-# #### Reusable plot functions (RETURN FIG) + save_fig
-
-# %%
-import matplotlib.pyplot as plt
-import shap
-
-plt.rcParams.update({
-    "figure.dpi": 130,
-    "savefig.dpi": 320,
-    "axes.titlesize": 16,
-    "axes.labelsize": 12,
-    "xtick.labelsize": 11,
-    "ytick.labelsize": 11
-})
-
-def save_fig(fig, path, show=True):
-    fig.tight_layout()
-    fig.savefig(path, bbox_inches="tight", dpi=320)
-    if show:
-        plt.show()
-    plt.close(fig)
-
-def plot_shap_summary_pretty(shap_matrix, X, title, max_display=15):
-    fig = plt.figure(figsize=(12, 7))
-    shap.summary_plot(shap_matrix, X, show=False, max_display=max_display)
-    plt.title(title)
-    return fig
-
-def plot_shap_bar_pretty(shap_matrix, X, title, max_display=15):
-    fig = plt.figure(figsize=(10, 6))
-    shap.summary_plot(shap_matrix, X, plot_type="bar", show=False, max_display=max_display)
-    plt.title(title)
-    return fig
-
-def plot_shap_dependence_pretty(shap_matrix, X, feature, title, interaction_index=None):
-    fig = plt.figure(figsize=(11, 6))
-    shap.dependence_plot(feature, shap_matrix, X, interaction_index=interaction_index, show=False)
-    plt.title(title)
-    return fig
-
-print("""
-Plot functions ready (JIRA compliant)
-
-Story:
-These functions RETURN figure objects, making them reusable for:
-- reports
-- dashboards
-- cross-city comparison
-""")
-
-# %% [markdown]
-# #### Toronto: SHAP Explainability Summary (Global & Distributional View)
-#
-# The SHAP analysis shows that **location_area** is the dominant driver of predicted delay risk in Toronto, with the largest mean absolute SHAP value and the widest spread of impacts across incidents. This indicates that geographic differences play the strongest role in shaping response-time delay predictions.
-#
-# **Hour of day** is the second most influential factor, confirming that temporal conditions meaningfully affect delay risk. The beeswarm distribution further suggests that certain hours consistently increase or decrease predicted risk rather than producing uniform effects.
-#
-# Operational context variables — particularly **unified_call_source** and **incident_category** — also rank highly in global importance, indicating that both incident characteristics and reporting pathways influence how quickly incidents are resolved.
-#
-# Short-term workload indicators (**calls_past_30min** and, to a lesser extent, **calls_past_60min**) contribute measurable but smaller effects, suggesting that recent demand levels modify delay risk without dominating model behavior.
-#
-# Calendar-related variables (**month**, **day_of_week**, **season**, and **year**) show comparatively modest influence, with SHAP values clustered near zero. These features act primarily as secondary adjustments rather than primary determinants.
-#
-# Overall, combining global importance rankings with SHAP distribution patterns indicates that Toronto delay risk is primarily structured by **spatial factors and time-of-day conditions**, while **incident context and short-term demand** function as meaningful but secondary modifiers of prediction outcomes.
-
-# %% [markdown]
-# #### 3.3 Dependence plots (top 2 drivers) + save + story
-
-# %%
 TOP_N = 15
 
 print(f"""
@@ -364,19 +288,10 @@ The model’s strongest drivers of delay risk are:
 print("Saved:", summary_path)
 print("Saved:", bar_path)
 
-# %% [markdown]
-# #### Location-Based Effects (`location_area`)
-#
-# The SHAP dependence analysis shows strong variation in delay risk across geographic areas.
-#
-# - Several locations consistently produce **positive SHAP values**, indicating structurally higher predicted delay risk.
-# - Other areas show strongly negative SHAP values, suggesting systematically faster response outcomes.
-# - The separation between location groups is large and stable, implying persistent spatial differences rather than random variation.
-#
-# These results indicate that operational conditions tied to geographic areas play a major role in shaping delay risk.
-#
+# ============================================
+# New Cell
+# ============================================
 
-# %%
 top2 = imp["feature"].head(2).tolist()
 
 print(f"""
@@ -439,52 +354,57 @@ Look for thresholds (sharp bends) that might suggest operational tipping points.
 """)
     print("Saved:", dep_path)
 
-# %% [markdown]
-#
-# #### Temporal Effects (`hour`)
-#
-# The dependence plot for `hour` reveals a nonlinear relationship between time-of-day and predicted delay risk.
-#
-# - Certain hours are associated with higher SHAP values, meaning increased probability of delay.
-# - Earlier or lower-activity periods tend to reduce predicted risk.
-# - Coloring by recent workload (`calls_past_60min`) suggests interaction effects, where higher demand amplifies delay risk during sensitive hours.
-#
-# This indicates that delay risk is influenced by **time-of-day combined with operational workload**, rather than time alone.
+# ============================================
+# New Cell
+# ============================================
 
-# %% [markdown]
-# #### Key Insight
-#
-# Dependence analysis confirms that:
-#
-# - Delay risk varies systematically across locations.
-# - Temporal effects exist but interact with workload intensity.
-# - Model predictions are driven by contextual operational conditions rather than single variables in isolation.
+# ============================================
+# Toronto — Fix: Step 8 Waterfall (robust to list/2D/3D SHAP)
+# File: notebooks/shap/trn_shap_model.ipynb
+# ============================================
 
-# %% [markdown]
-# ### 3.4 Waterfall “case study” (most professional storytelling plot)
+import numpy as np
+import shap
+import matplotlib.pyplot as plt
 
-# %%
 print(f"""
 Step 8 — Waterfall case study ({CITY})
 
-Story:
-We pick one high-risk incident and show a “receipt”:
-what pushed risk up, what pushed it down, and where the final prediction landed.
+We pick one high-risk incident and show the SHAP breakdown:
+what pushed risk up, what pushed it down, and the final predicted probability.
 """)
 
 probs = model.predict_proba(X_exp)[:, 1]
 idx_high = int(np.argmax(probs))
+
 x_row = X_exp.iloc[idx_high:idx_high+1]
 p = float(probs[idx_high])
 
 sv = explainer.shap_values(x_row)
-vals = sv[1][0] if isinstance(sv, list) else sv[0]
 
-base = float(
-    explainer.expected_value[1]
-    if isinstance(explainer.expected_value, (list, np.ndarray))
-    else explainer.expected_value
-)
+# Normalize to numpy
+if isinstance(sv, list):
+    vals = sv[1]
+else:
+    vals = sv
+vals = np.asarray(vals)
+
+# Handle 3D / 2D
+if vals.ndim == 3:
+    if vals.shape[-1] == 2:
+        vals = vals[0, :, 1]
+    elif vals.shape[1] == 2:
+        vals = vals[0, 1, :]
+    else:
+        vals = vals[0, :]
+elif vals.ndim == 2:
+    vals = vals[0]
+
+ev = explainer.expected_value
+if isinstance(ev, (list, np.ndarray)):
+    base = float(ev[1]) if len(ev) > 1 else float(ev[0])
+else:
+    base = float(ev)
 
 exp = shap.Explanation(
     values=vals,
@@ -493,61 +413,23 @@ exp = shap.Explanation(
     feature_names=list(x_row.columns)
 )
 
-fig = plt.figure(figsize=(12, 6))
+plt.figure(figsize=(12, 6))
 shap.plots.waterfall(exp, max_display=12, show=False)
 plt.title(f"{CITY} — Waterfall Explanation (High-risk case, p={p:.3f})")
 
 wf_path = os.path.join(OUT_DIR, f"{CITY.lower()}_shap_waterfall_highrisk.png")
-save_fig(fig, wf_path)
+save_fig(plt.gcf(), wf_path)
 
-print(f"""
-📖 {CITY} Story:
-This incident has predicted delay risk ≈ {p:.3f}.
-- Right-side bars increased risk (drivers of delay).
-- Left-side bars reduced risk (protective factors).
-""")
-print(" Saved:", wf_path)
+print("Saved:", wf_path)
 
-# %% [markdown]
-# #### Toronto — SHAP Waterfall Case Study (High-Risk Incident)
-#
-# The SHAP waterfall plot provides a local explanation for a single high-risk incident with a predicted delay probability of **0.863**. The visualization decomposes the model prediction into feature-level contributions, showing how each factor increased or reduced delay risk relative to the baseline expectation.
-#
-# ##### Main Risk Drivers
-#
-# The prediction is primarily driven upward by contextual and operational factors:
-#
-# - **Location area** is the strongest contributor, producing the largest positive impact on delay risk.
-# - **Incident category** and **call source** substantially increase predicted risk, indicating that incident context strongly influences response outcomes.
-# - **Hour of occurrence** also contributes positively, suggesting elevated risk during specific time periods.
-# - Temporal attributes such as **month** and **year** add smaller incremental effects.
-#
-# Together, these factors shift the prediction significantly above the model’s baseline risk level.
-#
-# ##### Mitigating Factors
-#
-# A small number of variables slightly reduce predicted risk:
-#
-# - Lower short-term workload (`calls_past_30min`)
-# - Day-of-week effects
-#
-# However, their influence is minor compared with the dominant positive drivers.
-#
-# ##### Interpretation
-#
-# This case study demonstrates that high delay risk emerges from the **combined effect of location, incident context, and timing**, rather than a single variable alone. The waterfall explanation illustrates how the model aggregates multiple operational signals to produce a final risk estimate, improving transparency of individual predictions.
+# ============================================
+# New Cell
+# ============================================
 
-# %% [markdown]
-# ### 3.5 Save SHAP sample parquet + notes.md (JIRA requirement)
-
-# %%
-print(f"""
-Step 9 — Save reusable artifacts ({CITY})
-
-Story:
-We save a Git-friendly SHAP sample package and a notes file
-so the results can be reused in reporting and dashboards (US5.3, US6.3).
-""")
+# ============================================
+# Toronto — Fix: Step 9 Save artifacts (parquet fallback to csv)
+# File: notebooks/shap/trn_shap_model.ipynb
+# ============================================
 
 TOPK = 12
 SAMPLE_ROWS = min(5000, X_exp.shape[0])
@@ -561,30 +443,34 @@ Ss = pd.DataFrame(shap_top, columns=[f"shap_{f}" for f in top_feats])
 out_pdf = pd.concat([Xs.reset_index(drop=True), Ss.reset_index(drop=True)], axis=1)
 
 parquet_path = os.path.join(OUT_DIR, f"{CITY.lower()}_shap_values_sample.parquet")
-out_pdf.to_parquet(parquet_path, index=False)
+csv_fallback = os.path.join(OUT_DIR, f"{CITY.lower()}_shap_values_sample.csv")
+
+try:
+    out_pdf.to_parquet(parquet_path, index=False)
+    print("Saved:", parquet_path)
+except Exception as e:
+    out_pdf.to_csv(csv_fallback, index=False)
+    print("Parquet write failed, saved CSV instead.")
+    print("Reason:", repr(e))
+    print("Saved:", csv_fallback)
 
 notes_path = os.path.join(OUT_DIR, f"{CITY.lower()}_shap_notes.md")
-top5 = imp.head(5)
 
+top5 = imp.head(5)
 lines = []
 lines.append(f"# {CITY} — SHAP Interpretation Notes\n")
 lines.append("## Top drivers\n")
 for _, r in top5.iterrows():
     lines.append(f"- **{r['feature']}** (mean|SHAP|={r['mean_abs_shap']:.6f})")
 lines.append("\n## Key patterns\n")
-lines.append("- Beeswarm: direction + spread of feature impact.")
-lines.append("- Bar chart: global importance ranking.")
-lines.append("- Waterfall: one incident explanation (best for storytelling).")
-lines.append("- Positive SHAP → higher delay risk; negative SHAP → lower delay risk.")
+lines.append("- Summary plot: direction + spread of feature impact.")
+lines.append("- Bar plot: global importance ranking.")
+lines.append("- Dependence plots: feature behavior and thresholds.")
+lines.append("- Waterfall: one incident explanation for storytelling.")
+lines.append("- Positive SHAP increases delay risk; negative SHAP decreases delay risk.")
 
 with open(notes_path, "w") as f:
     f.write("\n".join(lines))
 
-print("Saved:", parquet_path)
 print("Saved:", notes_path)
 
-print(f"""
-{CITY} Wrap-up Story:
-We translated model predictions into explanations.
-Now {CITY} has professional plots + ranking + reusable SHAP artifacts saved in output/.
-""")

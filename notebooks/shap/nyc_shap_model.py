@@ -1,20 +1,13 @@
-# ---
-# jupyter:
-#   jupytext:
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.19.1
-# ---
+# ============================================
+# New Cell
+# ============================================
 
-# %%
-# #!pip install lightgbm shap
+!pip install lightgbm shap
 
-# %% [markdown]
-# #### Config + outputs folder (same structure as earlier)
+# ============================================
+# New Cell
+# ============================================
 
-# %%
 import os
 
 CITY = "NYC"
@@ -40,10 +33,10 @@ os.makedirs(OUT_DIR, exist_ok=True)
 
 print(" Saving outputs to:", OUT_DIR)
 
-# %% [markdown]
-# Load data + label sanity check
+# ============================================
+# New Cell
+# ============================================
 
-# %%
 from pyspark.sql.functions import col
 
 df = (
@@ -68,10 +61,10 @@ if len(labels) < 2:
 
 print(f" {CITY} label check passed — both classes exist.")
 
-# %% [markdown]
-# Train LightGBM model (SHAP-friendly surrogate)
+# ============================================
+# New Cell
+# ============================================
 
-# %%
 import numpy as np
 import pandas as pd
 import lightgbm as lgb
@@ -137,10 +130,10 @@ Story:
 Now we compute SHAP values to explain which features push delay risk up/down.
 """)
 
-# %% [markdown]
-# Compute SHAP (FIXED: categorical splits) + validate shapes
+# ============================================
+# New Cell
+# ============================================
 
-# %%
 # ============================================
 # Cell 3 — Compute SHAP values (NYC) [SAFE + robust across SHAP versions]
 # ============================================
@@ -196,10 +189,10 @@ Story:
 We can now explain which features increase vs decrease delay risk.
 """)
 
-# %% [markdown]
-# Feature importance ranking + CSV export (JIRA schema)
+# ============================================
+# New Cell
+# ============================================
 
-# %%
 # ============================================
 # Cell 4 — Feature importance ranking (NYC)
 # ============================================
@@ -231,12 +224,8 @@ imp[["feature", "mean_abs_shap", "rank"]].to_csv(csv_path, index=False)
 print("Saved CSV:", csv_path)
 display(spark.createDataFrame(imp.head(12)))
 
-# %% [markdown]
-# Professional plot styling + reusable plot helpers (JIRA requirement)
-
-# %%
 # ============================================
-# Cell 5 — Reusable Plotting Functions (JIRA-Compliant: return fig)
+# New Cell
 # ============================================
 
 import matplotlib.pyplot as plt
@@ -251,8 +240,18 @@ plt.rcParams.update({
     "ytick.labelsize": 11
 })
 
-def save_fig(fig, path, show=True):
-    fig.tight_layout()
+def save_fig(fig, path, show=False):
+    # render first (prevents blank images in Databricks)
+    try:
+        fig.tight_layout()
+    except Exception:
+        pass
+    try:
+        fig.canvas.draw()
+        plt.pause(0.001)
+    except Exception:
+        pass
+
     fig.savefig(path, bbox_inches="tight", dpi=320)
     if show:
         plt.show()
@@ -270,24 +269,22 @@ def plot_shap_bar_pretty(shap_matrix, X, title, max_display=15):
     plt.title(title)
     return fig
 
-def plot_shap_dependence_pretty(shap_matrix, X, feature, title):
+def plot_shap_dependence_pretty(shap_matrix, X, feature, title, interaction_index=None):
     fig = plt.figure(figsize=(11, 6))
-    shap.dependence_plot(feature, shap_matrix, X, show=False)
+    shap.dependence_plot(
+        feature, shap_matrix, X,
+        interaction_index=interaction_index,
+        show=False
+    )
     plt.title(title)
     return fig
 
-print("""
-Plot functions ready (JIRA compliant).
+print("Plot helpers loaded: save_fig, plot_shap_summary_pretty, plot_shap_bar_pretty, plot_shap_dependence_pretty")
 
-Story:
-These functions now RETURN figure objects,
-so they can be reused cleanly in reports/dashboards.
-""")
+# ============================================
+# New Cell
+# ============================================
 
-# %% [markdown]
-# “Beautiful” global plots (summary + top-N bar) + storytelling
-
-# %%
 TOP_N = 15
 
 print(f"""
@@ -350,55 +347,123 @@ The model’s strongest drivers of delay risk are:
 print("Saved:", summary_path)
 print("Saved:", bar_path)
 
-# %% [markdown]
-# Dependence plots (top 2 drivers) + save + story
+# ============================================
+# New Cell
+# ============================================
 
-# %%
-top2 = imp["feature"].head(2).tolist()
+# ============================================
+# NYC — Safe Dependence Plots (2 outputs)
+dep_path = os.path.join(OUT_DIR, f"{CITY.lower()}_dependence_incident_category.png")
 
-print(f"""
-Step 7 — Dependence plots ({CITY})
+import os
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import shap
 
-Story:
-We zoom into the strongest drivers to see how they behave:
-- Does risk increase steadily?
-- Is there a threshold/tipping point?
+# ---------- Defensive checks ----------
+shap_matrix = np.asarray(shap_matrix)
 
-Top drivers: {top2}
-""")
-
-for f in top2:
-    print(f"\n Generating dependence plot for: {f}")
-
-    dep_path = os.path.join(OUT_DIR, f"{CITY.lower()}_dependence_{f}.png")
-
-    # Capture figure then save
-    fig = plot_shap_dependence_pretty(
-        shap_matrix,
-        X_exp,
-        f,
-        f"{CITY} — SHAP Dependence: {f}"
+if shap_matrix.shape[1] != len(X_exp.columns):
+    raise ValueError(
+        f"Mismatch: shap columns={shap_matrix.shape[1]} vs X columns={len(X_exp.columns)}"
     )
-    save_fig(fig, dep_path)
 
-    print(f"""
-Story for {f}:
-This plot explains whether increasing {f} pushes delay risk up or down.
+def assert_col_exists(X, colname):
+    if colname not in X.columns:
+        raise ValueError(f"Column not found in X_exp: {colname}")
 
-• Positive SHAP → increases delay probability
-• Negative SHAP → reduces delay probability
+def plot_location_area_top10_boxplot(X, shap_matrix, feature="location_area", top_k=10):
+    """
+    Categorical-safe plot for high-cardinality features.
+    Uses Top-K categories by mean(|SHAP|) and draws a matplotlib boxplot.
+    Returns fig.
+    """
+    assert_col_exists(X, feature)
+    j = list(X.columns).index(feature)
 
-Look for:
-- steady increase/decrease (monotonic effect)
-- sharp bends (threshold / tipping point)
-- scattered clusters (nonlinear interactions)
-""")
-    print("Saved:", dep_path)
+    dfp = pd.DataFrame({
+        feature: X[feature].astype(str),
+        "shap": shap_matrix[:, j]
+    })
 
-# %% [markdown]
-# Waterfall “case study” (most professional storytelling plot)
+    top_cats = (
+        dfp.groupby(feature)["shap"]
+        .apply(lambda s: float(np.mean(np.abs(s))))
+        .sort_values(ascending=False)
+        .head(top_k)
+        .index.tolist()
+    )
 
-# %%
+    dfp = dfp[dfp[feature].isin(top_cats)]
+
+    fig = plt.figure(figsize=(14, 6))
+    data = [dfp[dfp[feature] == c]["shap"].values for c in top_cats]
+
+    plt.boxplot(data, labels=top_cats, showfliers=False)
+    plt.xticks(rotation=45, ha="right")
+    plt.ylabel("SHAP value")
+    plt.xlabel(feature)
+    plt.title(f"{CITY} — SHAP Dependence (Top {top_k} categories): {feature}")
+    plt.tight_layout()
+    return fig
+
+# ============================================
+# Plot 1: incident_category (colored by location_area)
+# ============================================
+
+f1 = "incident_category"
+color_by = "location_area"
+path1 = os.path.join(OUT_DIR, f"{CITY.lower()}_dependence_incident_category.png")
+
+assert_col_exists(X_exp, f1)
+assert_col_exists(X_exp, color_by)
+
+plt.close("all")
+
+# Let SHAP draw first (do NOT pre-create fig)
+shap.dependence_plot(
+    f1,
+    shap_matrix,
+    X_exp,
+    interaction_index=color_by,
+    show=False
+)
+
+plt.title(f"{CITY} — SHAP Dependence: incident_category")
+plt.xticks(rotation=90)
+plt.tight_layout()
+
+fig1 = plt.gcf()
+if len(fig1.axes) == 0:
+    raise RuntimeError("incident_category dependence produced empty figure (axes=0).")
+
+save_fig(fig1, path1, show=False)
+print("Saved:", path1)
+
+# ============================================
+# Plot 2: location_area (Top-10 categorical-safe boxplot)
+# ============================================
+
+path2 = os.path.join(OUT_DIR, f"{CITY.lower()}_dependence_location_area.png")
+
+plt.close("all")
+fig2 = plot_location_area_top10_boxplot(X_exp, shap_matrix, feature="location_area", top_k=10)
+if len(fig2.axes) == 0:
+    raise RuntimeError("location_area boxplot produced empty figure (axes=0).")
+
+save_fig(fig2, path2, show=False)
+print("Saved:", path2)
+
+# Quick file sanity
+print("File sizes (bytes):")
+print("incident_category:", os.path.getsize(path1))
+print("location_area    :", os.path.getsize(path2))
+
+# ============================================
+# New Cell
+# ============================================
+
 print(f"""
 Step 8 — Waterfall case study ({CITY})
 
@@ -469,10 +534,10 @@ clear “audit trail” of how the prediction was formed.
 """)
 print(" Saved:", wf_path)
 
-# %% [markdown]
-# Save SHAP sample parquet + notes.md (JIRA requirement)
+# ============================================
+# New Cell
+# ============================================
 
-# %%
 print(f"""
 Step 9 — Save reusable artifacts ({CITY})
 
@@ -555,3 +620,4 @@ print(f"""
 We translated model predictions into explanations.
 Now {CITY} has professional plots + ranking + reusable SHAP artifacts saved in the project outputs folder.
 """)
+

@@ -1,17 +1,7 @@
-# ---
-# jupyter:
-#   jupytext:
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.19.1
-# ---
+# ============================================
+# New Cell
+# ============================================
 
-# %% [markdown]
-# #### Configuration & Path Set up
-
-# %%
 import os
 import pandas as pd
 import numpy as np
@@ -49,13 +39,10 @@ print("Toronto importance:", TOR_IMP_PATH)
 print("NYC importance    :", NYC_IMP_PATH)
 print("Outputs directory :", OUT_DIR)
 
-# %% [markdown]
-# #### SUBTASK 1: Cross-City Driver Identification & Table Generation
+# ============================================
+# New Cell
+# ============================================
 
-# %% [markdown]
-#  Load + Validate Schema
-
-# %%
 required_cols = {"feature", "mean_abs_shap", "rank"}
 
 tor = pd.read_csv(TOR_IMP_PATH)
@@ -85,10 +72,10 @@ nyc = nyc.dropna(subset=["feature", "mean_abs_shap", "rank"])
 print(" Loaded + validated schema.")
 print("Toronto rows:", tor.shape[0], "| NYC rows:", nyc.shape[0])
 
-# %% [markdown]
-# Select Top-N Per City + Identify Common/Unique
+# ============================================
+# New Cell
+# ============================================
 
-# %%
 tor_top = tor.sort_values("rank").head(TOP_N).copy()
 nyc_top = nyc.sort_values("rank").head(TOP_N).copy()
 
@@ -106,12 +93,10 @@ print("\nCommon drivers:", common)
 print("Toronto-specific:", tor_only)
 print("NYC-specific:", nyc_only)
 
-# %% [markdown]
-# #### Create Required Driver Table (UPGRADED for US6.3)
-#
-# Output: cross_city_shap_driver_table.csv
+# ============================================
+# New Cell
+# ============================================
 
-# %%
 # ==========================================
 # SUBTASK 1 — CELL 4
 # Cross-City Driver Table (Required Output)
@@ -207,15 +192,10 @@ print(out_driver_csv)
 
 display(driver_table.head(20))
 
+# ============================================
+# New Cell
+# ============================================
 
-# %% [markdown]
-# #### SUBTASK 2: Comparative Visualization & Technical Write-Up
-
-# %% [markdown]
-# Clean Comparative Plot (Presentation-ready)
-# Output: cross_city_shap_comparison_clean.png
-
-# %%
 def plot_clean_side_by_side(tor_top, nyc_top, out_dir, top_n=10):
     tor_map = dict(zip(tor_top["feature"], tor_top["mean_abs_shap"]))
     nyc_map = dict(zip(nyc_top["feature"], nyc_top["mean_abs_shap"]))
@@ -251,12 +231,10 @@ def plot_clean_side_by_side(tor_top, nyc_top, out_dir, top_n=10):
 plot_path = plot_clean_side_by_side(tor_top, nyc_top, OUT_DIR, top_n=TOP_N)
 print("Comparative plot saved:", plot_path)
 
+# ============================================
+# New Cell
+# ============================================
 
-# %% [markdown]
-# #### Short Technical Write-Up (NO policy interpretation)
-# Output: cross_city_shap_writeup.md
-
-# %%
 # =========================
 # SUBTASK 2 — Write-up (technical only, US5.3-safe)
 # Auto-adds:
@@ -342,10 +320,10 @@ with open(md_path, "w") as f:
 print(writeup)
 print("\n Write-up saved:", md_path)
 
-# %% [markdown]
-# #### Definition of Done Summary
+# ============================================
+# New Cell
+# ============================================
 
-# %%
 print(f"""
 US5.3 — Definition of Done Checklist
 
@@ -368,51 +346,3 @@ All outputs saved under:
 Ready for US6.3 operational interpretation.
 """)
 
-# %% [markdown]
-# ## Optional: Control Top-N Drivers (Add Before Top-N Logic) and 
-
-# %% [markdown]
-# Cross-City SHAP Summary (Top-10)
-#
-# The Top-10 delay drivers are identical for Toronto and NYC, reflecting the harmonized feature structure across both datasets. This indicates shared structural determinants of delay risk in urban fire systems. Differences emerge in ranking and magnitude, not feature presence. City-specific divergence may appear at deeper thresholds (Top-15 or Top-20)
-
-# %%
-# ============================================
-# Control Cell — Top-N Driver Selection (US5.3)
-# ============================================
-
-"""
-Purpose:
-This cell controls how many top-ranked drivers are compared
-between Toronto and NYC.
-
-Why this matters:
-- Smaller TOP_N (e.g., 10) → usually shows more shared structural drivers.
-- Larger TOP_N (e.g., 20 or 25) → reveals deeper ranking differences
-  and may expose city-specific drivers.
-
-You can adjust this value and re-run downstream cells.
-"""
-
-TOP_N = 15   # 🔁 Change to 10 / 20 / 25 if needed
-
-print(f"""
-🔧 Cross-City Driver Comparison Configuration
-
-Currently using:
-TOP_N = {TOP_N}
-
-If no city-specific drivers appear,
-increase TOP_N to explore deeper ranking differences.
-""")
-
-# %%
-# ============================================
-# Preview Top-N Drivers Per City
-# ============================================
-
-print("Top-N Toronto drivers:")
-display(tor.sort_values("rank").head(TOP_N))
-
-print("\nTop-N NYC drivers:")
-display(nyc.sort_values("rank").head(TOP_N))
