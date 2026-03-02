@@ -55,7 +55,7 @@ from src.models.survival_analysis import (
 TORONTO_TABLE = "workspace.capstone_project.toronto_model_ready"
 NYC_TABLE     = "workspace.capstone_project.nyc_model_ready"
 
-OUT_DIR = "/Workspace/Shared/DAMO_699-4-Capstone-Project/output/graphs"
+OUT_DIR = f"{REPO_ROOT}/output/graphs"
 print("Saving plots to:", OUT_DIR)
 
 
@@ -111,7 +111,7 @@ ax = km_overlay_plot(
     km_to,
     km_nyc,
     censor_threshold=60,
-    title="Toronto vs NYC",
+    title="Kaplan–Meier Survival Toronto vs NYC (Observed Response Times)",
 )
 plt.savefig(both_path, dpi=200)
 plt.show()
