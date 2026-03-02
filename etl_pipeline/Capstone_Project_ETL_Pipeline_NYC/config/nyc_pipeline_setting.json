@@ -1,0 +1,20 @@
+{
+  "id": "df95d3a8-03be-40f0-b685-b56966c90ea1",
+  "pipeline_type": "WORKSPACE",
+  "name": "Capstone_ETL_NYC",
+  "libraries": [
+    {
+      "glob": {
+        "include": "/Repos/jihirosan@gmail.com/damo_699-4-capstone-project/etl_pipeline/Capstone_Project_ETL_Pipeline_NYC/transformations/**"
+      }
+    }
+  ],
+  "schema": "capstone_project",
+  "continuous": false,
+  "development": false,
+  "photon": true,
+  "channel": "CURRENT",
+  "catalog": "workspace",
+  "serverless": true,
+  "root_path": "/Repos/jihirosan@gmail.com/damo_699-4-capstone-project/etl_pipeline/Capstone_Project_ETL_Pipeline_NYC/transformations"
+}

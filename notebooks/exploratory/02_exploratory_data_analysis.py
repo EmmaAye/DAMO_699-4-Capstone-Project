@@ -1887,6 +1887,7 @@ display(response_by_category(toronto_df, "unified_call_source", p=0.9))
 # %%
 display(response_by_category(nyc_df, "unified_call_source", p=0.9))
 
+
 # %% [markdown]
 # #### 4.4.3 Summary of Operation Singals and Call Source Effects
 #
@@ -1906,6 +1907,38 @@ display(response_by_category(nyc_df, "unified_call_source", p=0.9))
 # #### 4.5.1 Toroton Volume Area and Response Performance
 
 # %%
+def area_response_summary(df, area_col="location_area", p=0.9):
+    """
+    Area-level volume + response-time metrics.
+    - Volume counts all rows
+    - Response metrics computed on completed incidents only (response_minutes not null)
+    """
+    base = (
+        df.groupBy(area_col)
+          .agg(
+              F.count("*").alias("n_total"),
+              F.sum(F.col("response_minutes").isNull().cast("int")).alias("n_censored")
+          )
+          .withColumn("pct_censored", F.round(F.col("n_censored") / F.col("n_total") * 100, 2))
+    )
+
+    resp = (
+        df.filter(F.col("response_minutes").isNotNull())
+          .groupBy(area_col)
+          .agg(
+              F.count("*").alias("n_completed"),
+              F.round(F.mean("response_minutes"), 2).alias("mean_response"),
+              F.round(F.expr(f"percentile_approx(response_minutes, {p})"), 2).alias(f"p{int(p*100)}_response")
+          )
+    )
+
+    return (
+        base.join(resp, on=area_col, how="left")
+            .fillna({"n_completed": 0})
+            .orderBy(F.desc("n_total"))
+    )
+
+
 toronto_area_stats = (
     area_response_summary(toronto_df, area_col="location_area", p=0.9)
     .withColumn("city", F.lit("Toronto"))
@@ -2215,7 +2248,7 @@ ax.grid(axis="y", linestyle="--", alpha=0.5)
 
 # Smaller ticks
 ax.tick_params(axis="x", labelsize=9)
-ax.tick_params(axis="y", labelsize=)
+ax.tick_params(axis="y", labelsize=9)
 
 plt.xticks(rotation=45)
 

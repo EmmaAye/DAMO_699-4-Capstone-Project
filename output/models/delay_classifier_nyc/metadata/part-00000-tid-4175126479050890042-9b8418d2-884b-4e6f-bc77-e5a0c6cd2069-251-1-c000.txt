@@ -1,0 +1,1 @@
+{"class":"pyspark.ml.pipeline.PipelineModel","timestamp":1771208412074,"sparkVersion":"4.1.0","uid":"PipelineModel_ce44bfced365","paramMap":{"stageUids":["FeatureHasher_f03a9bb1c663","VectorAssembler_386e6e9b801c","RandomForestClassifier_3ecab5d2b094"],"language":"Python"},"defaultParamMap":{}}
