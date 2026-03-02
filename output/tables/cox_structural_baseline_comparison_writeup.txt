@@ -1,0 +1,11 @@
+Structural baseline comparison (Toronto vs NYC)
+
+- Median baseline survival time (time until S(t) drops to 0.5): Toronto=4.9 min, NYC=10.4 min.
+- Baseline hazard peak (highest instantaneous completion/arrival rate): Toronto peaks at 7.0 min (h0=0.007759), NYC peaks at 6.0 min (h0=0.003257).
+- Survival levels at fixed time points: S(5m): Toronto=0.480, NYC=0.843; S(10m): Toronto=0.028, NYC=0.506; S(15m): Toronto=0.014, NYC=0.462; S(30m): Toronto=0.012, NYC=0.457; S(45m): Toronto=0.012, NYC=0.457; S(60m): Toronto=0.012, NYC=0.457.
+
+Interpretation:
+- Toronto exhibits a substantially faster early decline in survival probability than NYC (median survival: 4.9 vs 10.4 minutes), indicating a more front-loaded response structure under baseline conditions.
+- The baseline hazard peak is notably higher in Toronto (h₀=0.007759) compared with NYC (h₀=0.003257), corresponding to approximately 2.38× greater peak intensity. This suggests stronger early event completion dynamics in Toronto, whereas NYC responses are distributed across a longer time horizon.
+- By the end of the observation window (T_MAX), survival probability remains substantially higher in NYC (S=0.457) than in Toronto (S=0.012), indicating a heavier long-duration tail in NYC response times.
+- Because survival estimates are evaluated under standardized reference-category covariates, these differences reflect structural timing characteristics of the response systems rather than demand-driven scenario effects (examined separately in US5.4).

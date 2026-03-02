@@ -149,7 +149,7 @@ nyc_thr = threshold_summary(df_nyc_base, city_label="NYC")
 thr_df = pd.concat([to_thr, nyc_thr], ignore_index=True)
 display(thr_df)
 
-thr_path = f"{OUT_TABLE_DIR}/survival_thresholds_city.csv"
+thr_path = f"{OUT_TABLE_DIR}/km_survival_thresholds_cross_city.csv"
 thr_df.to_csv(thr_path, index=False)
 print("Saved:", thr_path)
 
@@ -169,16 +169,16 @@ km_nyc = fit_km(nyc_pd_base, label="NYC",     duration_col="response_minutes", e
 
 
 display(validate_km(to_pd_base,  km_to,  "Toronto"))
-display(validate_km(nyc_pd_base, km_nyc, "NYC"))
+display(validate_km(nyc_pd_base, km_nyc, "Kaplan–Meier Baseline — NYC"))
 
 #-------- Plot KM curves for each city -------------#
 toronto_graph_path = f"{OUT_GRAPH_DIR}/final_km_toronto.png"
 nyc_graph_path = f"{OUT_GRAPH_DIR}/final_km_nyc.png"
 
-km_plot_single_city(km_to,  title="Toronto")
+km_plot_single_city(km_to,  title="Kaplan–Meier Baseline — Toronto")
 plt.savefig(toronto_graph_path, dpi=200)
 
-km_plot_single_city(km_nyc, title="NYC")
+km_plot_single_city(km_nyc, title="Kaplan–Meier Baseline — NYC")
 plt.savefig(nyc_graph_path, dpi=200)
 plt.show()
 
@@ -194,12 +194,12 @@ print(baseline_report_text(km_to, km_nyc))
 
 # %%
 # KM overlay
-graph_path = f"{OUT_GRAPH_DIR}/final_km_overlay_toronto_vs_nyc.png"
+graph_path = f"{OUT_GRAPH_DIR}/final_km_baseline_toronto_vs_nyc.png"
 km_overlay_plot(
     km_to,
     km_nyc,
     censor_threshold=60,
-    title="Toronto vs NYC",
+    title="Kaplan–Meier Survival Toronto vs NYC (Observed Response Times)",
 )
 
 plt.savefig(graph_path, dpi=200)
@@ -255,13 +255,13 @@ print("Cross-city log-rank:", lr)
 # Hazard comparison (binned)
 hz_to = binned_hazard(to_pd_base, censor_threshold=60.0, bin_width=2.0)
 hz_ny = binned_hazard(nyc_pd_base, censor_threshold=60.0, bin_width=2.0)
-hazard_overlay_plot(hz_to, hz_ny, title="Binned hazard comparison (0–60 min)")
-plt.savefig(f"{OUT_GRAPH_DIR}/final_hazard_overlay_toronto_vs_nyc.png", dpi=300, bbox_inches="tight")
+hazard_overlay_plot(hz_to, hz_ny, title="Observed Hazard Rate (Binned Kaplan–Meier Estimate)")
+plt.savefig(f"{OUT_GRAPH_DIR}/final_hr_km_binned_overlay.png", dpi=300, bbox_inches="tight")
 
 hz_to["city"] = "Toronto"
 hz_ny["city"] = "NYC"
 haz_df = pd.concat([hz_to, hz_ny], ignore_index=True)
-haz_path = f"{OUT_TABLE_DIR}/hazard_binned_city.csv"
+haz_path = f"{OUT_TABLE_DIR}/km_hazard_binned_cross_city.csv"
 haz_df.to_csv(haz_path, index=False)
 print("Saved:", haz_path)
 

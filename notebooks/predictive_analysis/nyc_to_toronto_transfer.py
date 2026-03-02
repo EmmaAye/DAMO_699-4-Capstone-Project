@@ -1,3 +1,14 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.19.1
+# ---
+
+# %%
 # ============================================
 # Sprint 7 / RQ3 Subtask: NYC -> Toronto Cross-City Transfer (Predictive Only)
 # Uses teammate delay-classifier pipeline (Hasher + Assembler + RF)
@@ -10,6 +21,7 @@ from pyspark.ml import Pipeline
 from pyspark.ml.feature import VectorAssembler, FeatureHasher
 from pyspark.ml.classification import RandomForestClassifier
 from pyspark.ml.evaluation import BinaryClassificationEvaluator, MulticlassClassificationEvaluator
+
 
 TRAIN_TABLE = "workspace.capstone_project.nyc_model_ready"
 TEST_TABLE  = "workspace.capstone_project.toronto_model_ready"
@@ -30,7 +42,6 @@ RF_PARAMS = dict(numTrees=50, maxDepth=5, seed=SEED)
 MAX_PER_CLASS = 200_000
 
 SAVE_RESULTS_TABLE = "workspace.capstone_project.transfer_test_nyc_to_toronto_sprint7"
-
 
 def load_and_prepare(table_name: str, city_name: str):
     df = spark.table(table_name).filter(col(LABEL_COL).isNotNull())
@@ -139,7 +150,7 @@ results_df = spark.createDataFrame([metrics]).withColumn("run_ts", F.current_tim
 display(results_df)
 
 results_df.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(SAVE_RESULTS_TABLE)
-print(f"Results saved to: {SAVE_RESULTS_TABLE}")
+print(f"✅ Results saved to: {SAVE_RESULTS_TABLE}")
 
 del model
 gc.collect()
