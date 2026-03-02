@@ -17,18 +17,45 @@
 # %%
 # !pip install lifelines
 
+# %%
+# %%
+# Databricks sometimes needs this after installs
+dbutils.library.restartPython()
+
 # %% [markdown]
 # ## 0. Environment Setup
 #
 # This section imports required libraries and prepares the analysis environment. Standard scientific Python packages are loaded for data handling, survival analysis outputs, and visualization. Paths for model artifacts and output figures are also initialized to ensure consistent file management within Databricks.
 
 # %%
-import os, json, pickle
+import os, sys, json, pickle
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 from typing import Dict, List, Optional, Tuple
+
+# %%
+# Repo root (Databricks workspace path)
+REPO_ROOT = "/Workspace/Repos/jihirosan@gmail.com/damo_699-4-capstone-project"
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
+#---------- Import Libraries from Project Code -----------#
+from src.models.survival_analysis import (
+# hazard utilities
+get_baseline_hazard_series,
+align_and_smooth_hazard,
+
+# survival metrics
+median_survival_time_interp,
+survival_at_times,
+hazard_peak,
+get_concordance,
+
+# plotting
+plot_survival_overlay,
+plot_hazard_overlay,
+)
 
 # %% [markdown]
 # ## 1. Paths + Inputs
@@ -239,7 +266,6 @@ def survival_sanity_check(S, name=""):
 survival_sanity_check(S_tor, "Toronto")
 survival_sanity_check(S_nyc, "NYC")
 
-
 # %% [markdown]
 # ## 6. Cross-City Survival Curve Overlay Plot
 #
@@ -248,20 +274,6 @@ survival_sanity_check(S_nyc, "NYC")
 # The resulting figure is saved for inclusion in reports and dashboard visualizations.
 
 # %%
-def plot_survival_overlay(S_a: pd.Series, S_b: pd.Series, label_a: str, label_b: str, outpath: str):
-    plt.figure(figsize=(8, 5))
-    plt.plot(S_a.index, S_a.values, label=label_a)
-    plt.plot(S_b.index, S_b.values, label=label_b)
-    plt.xlabel("Time (minutes)")
-    plt.ylabel("Baseline survival probability S(t | reference covariates)")
-    plt.title("Cox Model Baseline Survival Toronto vs NYC (Reference Profile)")
-    plt.ylim(0, 1.01)
-    plt.grid(True, alpha=0.3)
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(outpath, dpi=200)
-    plt.show()
-
 surv_fig = os.path.join(FIG_DIR, "final_cox_baseline_toronto_vs_nyc.png")
 plot_survival_overlay(S_tor, S_nyc, "Toronto", "NYC", surv_fig)
 
@@ -270,7 +282,6 @@ print("Saved:", surv_fig)
 # %%
 print("Toronto final survival:", S_tor.iloc[-1])
 print("NYC final survival:", S_nyc.iloc[-1])
-
 
 # %% [markdown]
 # ## 6. Estimate Baseline Hazard Functions
@@ -290,38 +301,6 @@ print("NYC final survival:", S_nyc.iloc[-1])
 # 3. optionally applies smoothing for visualization purposes.
 
 # %%
-def get_baseline_hazard_series(cph) -> pd.Series:
-    """
-    Returns baseline hazard as a Series indexed by time.
-    """
-    if hasattr(cph, "baseline_hazard_") and cph.baseline_hazard_ is not None:
-        bh = cph.baseline_hazard_.copy()
-        # bh is typically a DataFrame with 1 column
-        if isinstance(bh, pd.DataFrame):
-            s = bh.iloc[:, 0]
-        else:
-            s = pd.Series(bh)
-        s.index = s.index.astype(float)
-        s.index.name = "time"
-        s.name = "h0(t)"
-        return s.sort_index()
-
-    raise ValueError("Model does not have baseline_hazard_. Did you fit with lifelines CoxPHFitter?")
-
-def align_and_smooth_hazard(h0: pd.Series, timeline: np.ndarray, smooth_window: int = 5) -> pd.Series:
-    # Align to common timeline
-    aligned = h0.reindex(timeline, method="ffill")
-
-    # Replace deprecated fillna(method=...) with bfill()/ffill()
-    aligned = aligned.bfill().fillna(0.0)
-
-    # Optional smoothing for readability
-    if smooth_window and smooth_window > 1:
-        aligned = aligned.rolling(window=smooth_window, min_periods=1, center=True).mean()
-
-    aligned.name = h0.name
-    return aligned
-
 h0_tor_raw = get_baseline_hazard_series(cph_tor)
 h0_nyc_raw = get_baseline_hazard_series(cph_nyc)
 
@@ -336,7 +315,6 @@ display(h0_nyc.head(10))
 # %%
 print("Toronto peak hazard:", float(h0_tor.max()), "at time:", float(h0_tor.idxmax()))
 print("NYC peak hazard:", float(h0_nyc.max()), "at time:", float(h0_nyc.idxmax()))
-
 
 # %% [markdown]
 # ### Hazard Function Comparison
@@ -359,72 +337,9 @@ print("NYC peak hazard:", float(h0_nyc.max()), "at time:", float(h0_nyc.idxmax()
 # This visualization complements survival curves by revealing differences in when system activity is most concentrated.
 
 # %%
-def plot_hazard_overlay(h_a: pd.Series, h_b: pd.Series,
-                        label_a: str, label_b: str,
-                        outpath: str):
-
-    plt.figure(figsize=(10, 6))
-
-    color_a = "#1f77b4"   # Toronto
-    color_b = "#d62728"   # NYC
-
-    plt.plot(h_a.index, h_a.values, label=label_a)
-    plt.plot(h_b.index, h_b.values, label=label_b)
-
-    # ---- peak locations ----
-    peak_t_a = float(h_a.idxmax())
-    peak_v_a = float(h_a.max())
-
-    peak_t_b = float(h_b.idxmax())
-    peak_v_b = float(h_b.max())
-
-    # ---- peak lines ----
-    plt.axvline(peak_t_a, color=color_a, linestyle="--", linewidth=2, alpha=0.5)
-    plt.axvline(peak_t_b, color=color_b, linestyle="--", linewidth=2, alpha=0.5)
-
-    # ---- peak markers ----
-    plt.scatter(peak_t_a, peak_v_a, color=color_a, zorder=5)
-    plt.scatter(peak_t_b, peak_v_b, color=color_b, zorder=5)
-
-    plt.text(
-        peak_t_a + 0.6,
-        peak_v_a * 0.95,
-        f"{label_a}\npeak={peak_v_a:.4f}\nat {peak_t_a:.0f} min",
-        color=color_a,
-        fontsize=9,
-        weight="bold"
-    )
-
-    plt.text(
-        peak_t_b + 0.6,
-        peak_v_b * 0.85,
-        f"{label_b}\npeak={peak_v_b:.4f}\nat {peak_t_b:.0f} min",
-        color=color_b,
-        fontsize=9,
-        weight="bold"
-    )
-
-    # ---- formatting ----
-    plt.xlabel("Time (minutes)")
-    plt.ylabel("Baseline hazard h₀(t)")
-    plt.title("Baseline Hazard from Cox Model (Reference Covariates)")
-    plt.grid(True, alpha=0.3)
-    plt.legend()
-    plt.tight_layout()
-
-    # SAVE FIGURE
-    plt.savefig(outpath, dpi=200, bbox_inches="tight")
-
-    # display
-    plt.show()
-
-    # prevent memory accumulation in notebooks
-    plt.close()
-
 haz_fig = os.path.join(FIG_DIR, "final_hr_cox_overlay.png")
 plot_hazard_overlay(h0_tor, h0_nyc, "Toronto", "NYC", haz_fig)
 print("Saved:", haz_fig)
-
 
 # %% [markdown]
 # ### Cross-City Hazard Comparison Summary 
@@ -443,49 +358,6 @@ print("Saved:", haz_fig)
 # A summary comparison table is generated and saved for downstream reporting and dashboard integration.
 
 # %%
-def median_survival_time_interp(S: pd.Series) -> float:
-    # If never drops below 0.5
-    if (S <= 0.5).sum() == 0:
-        return float("nan")
-
-    t2 = float(S[S <= 0.5].index[0])  # first time below
-    # if exactly at t2
-    if S.loc[t2] == 0.5 or t2 == float(S.index.min()):
-        return t2
-
-    # previous time above 0.5
-    idx_pos = S.index.get_loc(t2)
-    t1 = float(S.index[idx_pos - 1])
-    s1 = float(S.loc[t1])
-    s2 = float(S.loc[t2])
-
-    # linear interpolate time where S(t)=0.5
-    if s1 == s2:
-        return t2
-    return float(t1 + (0.5 - s1) * (t2 - t1) / (s2 - s1))
-
-def survival_at_times(S: pd.Series, times: List[float]) -> Dict[str, float]:
-    # nearest time on index (index is minute timeline)
-    out = {}
-    for t in times:
-        t2 = float(min(max(t, S.index.min()), S.index.max()))
-        out[f"S({int(t2)}m)"] = float(S.loc[t2])
-    return out
-
-def hazard_peak(h: pd.Series) -> Tuple[float, float]:
-    idx = float(h.idxmax())
-    val = float(h.max())
-    return idx, val
-
-def get_concordance(meta: Dict, cph=None) -> float:
-    for k in ["concordance", "concordance_index", "c_index", "cindex"]:
-        if k in meta and meta[k] is not None:
-            return float(meta[k])
-    # fallback if lifelines stored it
-    if cph is not None and hasattr(cph, "concordance_index_"):
-        return float(cph.concordance_index_)
-    return float("nan")
-
 selected_times = [5, 10, 15, 30, 45, 60]
 selected_times = [t for t in selected_times if t <= T_MAX]
 
