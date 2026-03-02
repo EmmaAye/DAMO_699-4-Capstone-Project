@@ -10,7 +10,8 @@
 
 ## Key patterns
 
-- Beeswarm: direction + spread of feature impact.
-- Bar chart: global importance ranking.
-- Waterfall: one incident explanation (best for storytelling).
-- Positive SHAP → higher delay risk; negative SHAP → lower delay risk.
+- Summary plot: direction + spread of feature impact.
+- Bar plot: global importance ranking.
+- Dependence plots: feature behavior and thresholds.
+- Waterfall: one incident explanation for storytelling.
+- Positive SHAP increases delay risk; negative SHAP decreases delay risk.
