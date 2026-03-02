@@ -474,3 +474,35 @@ with open(notes_path, "w") as f:
 
 print("Saved:", notes_path)
 
+# ============================================
+# New Cell
+# ============================================
+
+# --------------------------------------------
+# City-specific driver threshold 
+# --------------------------------------------
+TOP_CITY_N = 15 
+
+# ============================================
+# New Cell
+# ============================================
+
+# ============================================
+# City-specific driver list (Toronto) — Top-N for this notebook
+# ============================================
+
+top_city = imp["feature"].head(TOP_CITY_N).tolist()
+
+top_city_path = os.path.join(OUT_DIR, f"{CITY.lower()}_top{TOP_CITY_N}_drivers.csv")
+(
+    imp.loc[imp["feature"].isin(top_city), ["feature", "mean_abs_shap", "rank"]]
+      .sort_values("rank")
+      .to_csv(top_city_path, index=False)
+)
+
+print(f"Top-{TOP_CITY_N} Toronto drivers saved to:")
+print(top_city_path)
+
+print(f"Top-{TOP_CITY_N} Toronto drivers:")
+print(top_city)
+

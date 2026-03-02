@@ -352,6 +352,7 @@ print("Saved:", bar_path)
 # ============================================
 
 # ============================================
+# Dependence plots (top 2 drivers) + save + story
 # NYC — Safe Dependence Plots (2 outputs)
 dep_path = os.path.join(OUT_DIR, f"{CITY.lower()}_dependence_incident_category.png")
 
@@ -620,4 +621,36 @@ print(f"""
 We translated model predictions into explanations.
 Now {CITY} has professional plots + ranking + reusable SHAP artifacts saved in the project outputs folder.
 """)
+
+# ============================================
+# New Cell
+# ============================================
+
+# --------------------------------------------
+# City-specific driver threshold (keep constant in this notebook)
+# --------------------------------------------
+TOP_CITY_N = 15  
+
+# ============================================
+# New Cell
+# ============================================
+
+# ============================================
+# City-specific driver list (NYC) — Top-N for this notebook
+# ============================================
+
+top_city = imp["feature"].head(TOP_CITY_N).tolist()
+
+top_city_path = os.path.join(OUT_DIR, f"{CITY.lower()}_top{TOP_CITY_N}_drivers.csv")
+(
+    imp.loc[imp["feature"].isin(top_city), ["feature", "mean_abs_shap", "rank"]]
+      .sort_values("rank")
+      .to_csv(top_city_path, index=False)
+)
+
+print(f"Top-{TOP_CITY_N} NYC drivers saved to:")
+print(top_city_path)
+
+print(f"Top-{TOP_CITY_N} NYC drivers:")
+print(top_city)
 
