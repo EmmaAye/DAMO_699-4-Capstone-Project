@@ -1,7 +1,17 @@
-# ============================================
-# New Cell
-# ============================================
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.19.1
+# ---
 
+# %% [markdown]
+# #### 1. Configuration & Path Set up
+
+# %%
 import os
 import pandas as pd
 import numpy as np
@@ -39,10 +49,13 @@ print("Toronto importance:", TOR_IMP_PATH)
 print("NYC importance    :", NYC_IMP_PATH)
 print("Outputs directory :", OUT_DIR)
 
-# ============================================
-# New Cell
-# ============================================
+# %% [markdown]
+# ### 2. SUBTASK 1: Cross-City Driver Identification & Table Generation
 
+# %% [markdown]
+# #### 2.1. Load & Validate Schema
+
+# %%
 required_cols = {"feature", "mean_abs_shap", "rank"}
 
 tor = pd.read_csv(TOR_IMP_PATH)
@@ -72,10 +85,10 @@ nyc = nyc.dropna(subset=["feature", "mean_abs_shap", "rank"])
 print(" Loaded + validated schema.")
 print("Toronto rows:", tor.shape[0], "| NYC rows:", nyc.shape[0])
 
-# ============================================
-# New Cell
-# ============================================
+# %% [markdown]
+# #### 2.2 Select Top-N Per City + Identify Common/Unique
 
+# %%
 tor_top = tor.sort_values("rank").head(TOP_N).copy()
 nyc_top = nyc.sort_values("rank").head(TOP_N).copy()
 
@@ -93,10 +106,12 @@ print("\nCommon drivers:", common)
 print("Toronto-specific:", tor_only)
 print("NYC-specific:", nyc_only)
 
-# ============================================
-# New Cell
-# ============================================
+# %% [markdown]
+# #### 2.3 Create Required Driver Table (UPGRADED for US6.3)
+#
+# Output: cross_city_shap_driver_table.csv
 
+# %%
 # ==========================================
 # SUBTASK 1 — CELL 4
 # Cross-City Driver Table (Required Output)
@@ -192,10 +207,15 @@ print(out_driver_csv)
 
 display(driver_table.head(20))
 
-# ============================================
-# New Cell
-# ============================================
 
+# %% [markdown]
+# #### 3. SUBTASK 2: Comparative Visualization & Technical Write-Up
+
+# %% [markdown]
+# #### 3.1 Clean Comparative Plot (Presentation-ready)
+# Output: cross_city_shap_comparison_clean.png
+
+# %%
 def plot_clean_side_by_side(tor_top, nyc_top, out_dir, top_n=10):
     tor_map = dict(zip(tor_top["feature"], tor_top["mean_abs_shap"]))
     nyc_map = dict(zip(nyc_top["feature"], nyc_top["mean_abs_shap"]))
@@ -231,10 +251,12 @@ def plot_clean_side_by_side(tor_top, nyc_top, out_dir, top_n=10):
 plot_path = plot_clean_side_by_side(tor_top, nyc_top, OUT_DIR, top_n=TOP_N)
 print("Comparative plot saved:", plot_path)
 
-# ============================================
-# New Cell
-# ============================================
 
+# %% [markdown]
+# #### 3.2 Short Technical Write-Up (NO policy interpretation)
+# Output: cross_city_shap_writeup.md
+
+# %%
 # =========================
 # SUBTASK 2 — Write-up (technical only, US5.3-safe)
 # Auto-adds:
@@ -320,10 +342,10 @@ with open(md_path, "w") as f:
 print(writeup)
 print("\n Write-up saved:", md_path)
 
-# ============================================
-# New Cell
-# ============================================
+# %% [markdown]
+# #### 3.3 Definition of Done Summary
 
+# %%
 print(f"""
 US5.3 — Definition of Done Checklist
 
@@ -345,4 +367,3 @@ All outputs saved under:
 
 Ready for US6.3 operational interpretation.
 """)
-
