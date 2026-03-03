@@ -9,7 +9,7 @@
 # ---
 
 # %%
-# #!pip install lightgbm shap
+# # !pip install lightgbm shap
 
 # %% [markdown]
 # %md
@@ -572,6 +572,10 @@ TOPK = 12
 SAMPLE_ROWS = min(5000, X_exp.shape[0])
 
 top_feats = imp["feature"].head(TOPK).tolist()
+# Guard: ensure all top features exist in X_exp
+top_feats = [f for f in top_feats if f in X_exp.columns]
+if len(top_feats) == 0:
+    raise ValueError("No top features found in X_exp columns. Check imp['feature'] vs X_exp.columns.")
 idx = [X_exp.columns.get_loc(f) for f in top_feats]
 
 shap_top = shap_matrix[:SAMPLE_ROWS, :][:, idx]
