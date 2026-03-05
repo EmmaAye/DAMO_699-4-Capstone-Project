@@ -1,4 +1,20 @@
 {
+  "datasets": [
+    {
+      "name": "b82b9527",
+      "displayName": "nyc_model_ready",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.nyc_model_ready"
+      ]
+    },
+    {
+      "name": "25a85096",
+      "displayName": "toronto_model_ready",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.toronto_model_ready"
+      ]
+    }
+  ],
   "pages": [
     {
       "name": "f239ed96",
