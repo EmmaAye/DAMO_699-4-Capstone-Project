@@ -1,47 +1,60 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.19.1
+# ---
+
+# %%
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# 1. Define Paths (Aligning with your existing structure)
-TABLE_DIR = "../../output/shap/"
-GRAPH_DIR = "../../output/graphs/"
+SHAP_DIR = "../../output/shap/"
+FIG_DIR  = "../../output/graphs/"
+TOP_N = 15
 
-def generate_predictive_importance_outputs(city_name):
-    print(f"\n>>> Processing Predictive Importance for {city_name} via SHAP")
+os.makedirs(FIG_DIR, exist_ok=True)
 
-    # 2. Load the SHAP Importance Artifact
-    # The requirement specifically asks for the *_shap_importance.csv
-    file_path = f"{TABLE_DIR}{city_name.lower()}/{city_name.lower()}_shap_importance.csv"
-    
-    try:
-        # Load the SHAP values
-        shap_df = pd.read_csv(file_path)
-        
-        # Sort by importance for the plot
-        shap_df = shap_df.sort_values(by=shap_df.columns[1], ascending=True)
+def generate_predictive_importance_outputs(city: str, top_n: int = TOP_N):
+    city = city.lower()
+    print(f"\n>>> Processing Predictive Importance for {city.upper()} via SHAP")
 
-        # 3. Deliverable: SHAP bar plot (Top N)
-        plt.figure(figsize=(10, 8))
-        plt.barh(shap_df.iloc[:, 0], shap_df.iloc[:, 1], color='skyblue')
-        plt.title(f"Predictive Feature Importance (SHAP): {city_name}")
-        plt.xlabel("mean(|SHAP value|) (Average impact on delay_indicator)")
-        plt.grid(axis='x', linestyle='--', alpha=0.7)
-        plt.tight_layout()
+    file_path = os.path.join(SHAP_DIR, city, f"{city}_shap_importance.csv")
 
-        # Save Plot
-        plot_name = f"{city_name.lower()}_predictive_importance_plot.png"
-        plt.savefig(f"{GRAPH_DIR}{plot_name}")
-        plt.close()
-        
-        print(f"Successfully generated plot: {plot_name}")
-        print(f"Using existing table: {file_path}")
+    shap_df = pd.read_csv(file_path)
 
-    except FileNotFoundError:
-        print(f"Error: {file_path} not found. Ensure SHAP values were exported previously.")
+    # enforce schema (safer)
+    required = {"feature", "mean_abs_shap"}
+    if not required.issubset(set(shap_df.columns)):
+        raise ValueError(f"{city}: SHAP CSV missing required columns {required}. Found={shap_df.columns.tolist()}")
 
-# 4. Main Execution
+    # rank descending (most important first)
+    shap_df = shap_df.sort_values("mean_abs_shap", ascending=False).reset_index(drop=True)
+    shap_df["rank"] = range(1, len(shap_df) + 1)
+
+    # Top-N for plotting (reverse for horizontal plot readability)
+    top_df = shap_df.head(top_n).sort_values("mean_abs_shap", ascending=True)
+
+    plt.figure(figsize=(10, 8))
+    plt.barh(top_df["feature"], top_df["mean_abs_shap"])
+    plt.title(f"{city.upper()} — Predictive Feature Importance (SHAP) Top {top_n}")
+    plt.xlabel("mean(|SHAP|)")
+    plt.tight_layout()
+
+    plot_path = os.path.join(FIG_DIR, f"{city}_predictive_shap_importance_top{top_n}.png")
+    plt.savefig(plot_path, dpi=300, bbox_inches="tight")
+    plt.show()
+    plt.close()
+
+    print(f"Saved plot: {plot_path}")
+    print(f"Used table: {file_path} (full ranking already exported)")
+
 if __name__ == "__main__":
-    cities = ["toronto", "nyc"]
-    for city in cities:
+    for city in ["toronto", "nyc"]:
         generate_predictive_importance_outputs(city)
-    
-    print("\nUS Requirement Check: Predictive feature importance deliverables complete.")
+
+    print("\n Predictive feature importance deliverables complete (plots + ranked tables from SHAP CSVs).")
