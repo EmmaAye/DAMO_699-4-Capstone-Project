@@ -1367,6 +1367,7 @@ common_cols = [
     "incident_datetime",
     "response_minutes",
     "event_indicator",
+    "delay_indicator",
     "hour",
     "day_of_week",
     "month",
@@ -1396,3 +1397,35 @@ combined_model_df = toronto_for_merge.unionByName(nyc_for_merge)
 
 combined_model_df.printSchema()
 display(combined_model_df.limit(5))
+
+# %%
+
+tor_cols = set(toronto_df.columns)
+nyc_cols = set(nyc_df.columns)
+common_set = set(combined_model_df.columns)
+
+extra_tor = sorted(list(tor_cols - common_set))
+extra_nyc = sorted(list(nyc_cols - common_set))
+
+print("Extra columns in Toronto (not included):", extra_tor[:50])
+print("Extra columns in NYC (not included):", extra_nyc[:50])
+
+# %%
+extra_comb_01 = sorted(list(common_set - tor_cols))
+print("Extra columns in combined (not included):", extra_comb_01[:50])
+
+# %% [markdown]
+# ### 5.6 Save Merge Data Frame
+
+# %%
+target_table = "workspace.capstone_project.combined_model_ready"
+
+(
+    combined_model_df
+    .write
+    .mode("overwrite")
+    .option("overwriteSchema", "true")
+    .saveAsTable(target_table)
+)
+
+print("Saved table:", target_table)workspace.capstone_project.combined_model_ready
