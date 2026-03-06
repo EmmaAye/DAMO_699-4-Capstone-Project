@@ -18,7 +18,40 @@
       "name": "ac05473d",
       "displayName": "combined_model_ready",
       "queryLines": [
-        "SELECT * FROM workspace.capstone_project.combined_model_ready"
+        "SELECT * FROM workspace.capstone_project.combined_model_ready\r\n",
+        "-- SELECT DISTINCT city\r\n",
+        "-- FROM workspace.capstone_project.combined_model_ready\r\n",
+        "-- ORDER BY city"
+      ]
+    },
+    {
+      "name": "268ebafb",
+      "displayName": "Median Response Time by City",
+      "queryLines": [
+        "SELECT\n",
+        "  city,\n",
+        "  APPROX_PERCENTILE(response_minutes, 0.5) AS median_response_time\n",
+        "FROM\n",
+        "  workspace.capstone_project.combined_model_ready\n",
+        "GROUP BY\n",
+        "  city"
+      ],
+      "catalog": "workspace",
+      "schema": "capstone_project"
+    },
+    {
+      "name": "50688811",
+      "displayName": "mean_med_p90_p95",
+      "queryLines": [
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    AVG(response_minutes) AS mean_response,\r\n",
+        "    percentile_approx(response_minutes, 0.5) AS median_response,\r\n",
+        "    percentile_approx(response_minutes, 0.9) AS p90_response,\r\n",
+        "    percentile_approx(response_minutes, 0.95) AS p95_response\r\n",
+        "FROM workspace.capstone_project.combined_model_ready\r\n",
+        "GROUP BY city\r\n",
+        "ORDER BY city"
       ]
     }
   ],
@@ -46,19 +79,30 @@
           },
           "position": {
             "x": 0,
-            "y": 0,
-            "width": 3,
+            "y": 4,
+            "width": 4,
             "height": 4
           }
         },
         {
           "widget": {
-            "name": "722abd13",
+            "name": "nyc-fire-incident-counts",
             "queries": [
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "b82b9527",
+                  "datasetName": "ac05473d",
+                  "fields": [
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` ILIKE '%nyc%'"
+                    }
+                  ],
                   "disaggregated": false
                 }
               }
@@ -66,17 +110,154 @@
             "spec": {
               "version": 2,
               "frame": {
-                "showTitle": true
+                "showTitle": true,
+                "title": "NYC Fire Incident Counts"
               },
               "widgetType": "counter",
-              "encodings": {}
+              "encodings": {
+                "value": {
+                  "fieldName": "count(*)"
+                }
+              }
             }
           },
           "position": {
-            "x": 3,
+            "x": 0,
+            "y": 2,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "6015a2a9",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ac05473d",
+                  "fields": [
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` ILIKE '%toronto%'"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Toronto Fire Incident Counts"
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "count(*)"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 2,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "7ceb241a",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<span style=\"text-align:center;display:block\"><span style=\"font-size: 48px;line-height: 1.5;\">**Executive Overview**</span></span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
             "y": 0,
-            "width": 6,
-            "height": 6
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "data-summary",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "50688811",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "mean_response",
+                      "expression": "`mean_response`"
+                    },
+                    {
+                      "name": "median_response",
+                      "expression": "`median_response`"
+                    },
+                    {
+                      "name": "p90_response",
+                      "expression": "`p90_response`"
+                    },
+                    {
+                      "name": "p95_response",
+                      "expression": "`p95_response`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "city"
+                  },
+                  {
+                    "fieldName": "mean_response"
+                  },
+                  {
+                    "fieldName": "median_response"
+                  },
+                  {
+                    "fieldName": "p90_response"
+                  },
+                  {
+                    "fieldName": "p95_response"
+                  }
+                ]
+              },
+              "frame": {
+                "showDescription": false,
+                "title": "Data Summary",
+                "showTitle": true
+              },
+              "rowsPerPage": 25,
+              "displayRowNumbers": false
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 2,
+            "width": 7,
+            "height": 3
           }
         }
       ],
@@ -308,7 +489,30 @@
   ],
   "uiSettings": {
     "theme": {
-      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+      "canvasBackgroundColor": {
+        "light": "#FAFAFB",
+        "dark": "#1F272D"
+      },
+      "widgetBackgroundColor": {
+        "light": "#B4CFCE",
+        "dark": "#1A2B56"
+      },
+      "fontColor": {
+        "light": "#11171C",
+        "dark": "#E8ECF0"
+      },
+      "selectionColor": {
+        "light": "#2272B4",
+        "dark": "#8ACAFF"
+      },
+      "visualizationColors": [
+        "#1A2B56"
+      ],
+      "widgetHeaderAlignment": "LEFT"
+    },
+    "genieSpace": {
+      "isEnabled": true,
+      "enablementMode": "ENABLED"
     },
     "applyModeEnabled": false
   }
