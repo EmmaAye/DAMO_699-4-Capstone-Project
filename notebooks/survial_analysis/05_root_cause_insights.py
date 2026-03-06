@@ -74,6 +74,23 @@ print("Common setup loaded successfully.")
 
 
 # %%
+# ---------- Helper functions ----------
+def read_json(path):
+    with open(path, "r") as f:
+        return json.load(f)
+
+def get_censor_time(meta: dict, default=60):
+    """
+    Extract censor_time from Cox metadata safely.
+    """
+    for key in ["censor_time", "censor_minutes", "censor_threshold", "time_horizon"]:
+        if key in meta:
+            return int(meta[key])
+
+    return default
+
+
+# %%
 # ---------- Extracting feature list from Cox meta ----------
 def extract_features(meta):
     possible_keys = [
@@ -95,17 +112,17 @@ def extract_features(meta):
 
 # %%
 # ---------- Survival confirmation ----------
-def read_json(path):
-    with open(path, 'r') as f:
-        return json.load(f)
+#def read_json(path):
+    #with open(path, 'r') as f:
+        #return json.load(f)
 
 def check_survival(meta_path):
     meta = read_json(meta_path)
     features = set(extract_features(meta))
 
     return {
-        "calls_past_30min_in_survival": "Yes" if "calls_past_30min" in features else "No",
-        "calls_past_60min_in_survival": "Yes" if "calls_past_60min" in features else "No"
+        "calls_past_30min_in_survival": "Yes" if "calls_past_30min".lower() in features else "No",
+        "calls_past_60min_in_survival": "Yes" if "calls_past_60min".lower() in features else "No"
     }
 
 
@@ -130,11 +147,16 @@ def check_shap(shap_path):
             "calls_past_60min_in_predictive": "Unknown"
         }
 
-    features = set(df[feature_col].astype(str))
+    features = set(
+        df[feature_col]
+        .astype(str)
+        .str.strip()
+        .str.lower()
+        )
 
     return {
-        "calls_past_30min_in_predictive": "Yes" if "calls_past_30min" in features else "No",
-        "calls_past_60min_in_predictive": "Yes" if "calls_past_60min" in features else "No"
+        "calls_past_30min_in_predictive": "Yes" if "calls_past_30min".lower() in features else "No",
+        "calls_past_60min_in_predictive": "Yes" if "calls_past_60min".lower() in features else "No"
     }
 
 
@@ -172,22 +194,9 @@ print("Saved confirmation table:", out_path)
 
 # %%
 # ---------- helpers ----------
-def read_json(path):
-    with open(path, "r") as f:
-        return json.load(f)
-
-def get_censor_time(meta: dict):
-    # try common keys
-    for k in ["censor_time", "censor_minutes", "censor_threshold", "time_horizon", "t_max"]:
-        if k in meta:
-            return meta[k]
-    # nested possibility
-    for a in ["spec", "model_spec", "meta"]:
-        if a in meta and isinstance(meta[a], dict):
-            for k in ["censor_time", "censor_minutes", "censor_threshold", "time_horizon", "t_max"]:
-                if k in meta[a]:
-                    return meta[a][k]
-    return None
+#def read_json(path):
+   # with open(path, "r") as f:
+    #    return json.load(f)
 
 def read_stats(path):
     """
@@ -350,7 +359,7 @@ print("Saved combined demand HR table:", out_path)
 # Function to compute percentiles
 def compute_percentiles(table_name, city_name):
     
-    df = spark.table(table_name)
+    df = spark.table(table_name).select(*DEMAND_FEATURES).dropna(subset=DEMAND_FEATURES)
     
     results = []
     
@@ -386,94 +395,107 @@ scenario_df.to_csv(out_path, index=False)
 
 print("Saved scenario table:", out_path)
 
+# %% [markdown]
+# Delay Risk Definition in Survival Analysis
+
 # %%
-# ===== Demand scenario values from your Step 3 output =====
-TOR_LOW_60, TOR_HIGH_60 = 0, 1
-NYC_LOW_60, NYC_HIGH_60 = 45, 107
+# =========================================
+# STEP 4: Delay Risk Curves (S(t)) under Low vs High Demand
+# - Delay risk = S(t) = P(Response time > t)
+# - Low/High demand pulled from demand_scenario_definition.csv (traceable)
+# - Varies calls_past_60min only
+# =========================================
 
+from lifelines import CoxPHFitter  # needed for pickle load
 
-def read_json(path):
-    with open(path, "r") as f:
-        return json.load(f)
+SCENARIO_PATH = f"{TABLE_DIR}/demand_scenario_definition.csv"
 
-def get_censor_time(meta: dict, default=60):
+def get_city_scenario_values(scenario_csv, city, feature="calls_past_60min"):
+    sc = pd.read_csv(scenario_csv)
+    row = sc[(sc["city"] == city) & (sc["feature"] == feature)]
+    if row.empty:
+        raise ValueError(
+            f"Scenario missing for city={city}, feature={feature}. "
+            f"Found sample: {sc[['city','feature']].drop_duplicates().head()}"
+        )
+    low = float(row["low_demand_p10"].iloc[0])
+    high = float(row["high_demand_p90"].iloc[0])
+    return low, high
+"""
+def get_censor_time_from_meta(meta_path: str, default=60):
+    meta = read_json(meta_path)
     for k in ["censor_time", "censor_minutes", "censor_threshold", "time_horizon", "t_max"]:
         if k in meta:
             return int(meta[k])
-    for a in ["spec", "model_spec", "meta"]:
-        if a in meta and isinstance(meta[a], dict):
+    for parent in ["spec", "model_spec", "meta"]:
+        if parent in meta and isinstance(meta[parent], dict):
             for k in ["censor_time", "censor_minutes", "censor_threshold", "time_horizon", "t_max"]:
-                if k in meta[a]:
-                    return int(meta[a][k])
-    return default
-
-def load_cph(path):
-    with open(path, "rb") as f:
+                if k in meta[parent]:
+                    return int(meta[parent][k])
+    return int(default)
+"""
+def load_cph_model(pkl_path: str):
+    with open(pkl_path, "rb") as f:
         return pickle.load(f)
 
-def load_reference_row(path):
-    df = pd.read_csv(path)
-    # Ensure single-row dataframe
-    if df.shape[0] != 1:
-        df = df.head(1)
-    return df
+def load_reference_row(csv_path: str) -> pd.DataFrame:
+    ref = pd.read_csv(csv_path)
+    if ref.shape[0] != 1:
+        ref = ref.head(1)
+    return ref
 
-def align_reference_to_model(cph, ref_df):
-    """
-    Ensures reference row has exactly the columns expected by the Cox model.
-    If extra cols exist, drop them.
-    If missing cols exist, fill with 0 (rare, but safe).
-    """
-    model_cols = list(getattr(cph, "params_", pd.Series()).index)
-    if not model_cols:
-        # fallback: sometimes model stores a training column list differently
-        model_cols = list(ref_df.columns)
+def align_reference_to_model(cph, ref_df: pd.DataFrame) -> pd.DataFrame:
+    model_cols = list(cph.params_.index)
 
     aligned = ref_df.copy()
 
-    # Drop extras
+    # drop extras
     extras = [c for c in aligned.columns if c not in model_cols]
     if extras:
         aligned = aligned.drop(columns=extras)
 
-    # Add missing
+    # add missing
     missing = [c for c in model_cols if c not in aligned.columns]
     for c in missing:
         aligned[c] = 0
 
-    # Reorder to match model
+    # reorder
     aligned = aligned[model_cols]
     return aligned
 
-def risk_curve_from_cph(cph, base_row, demand_value_60, times):
-    row = base_row.copy()
+def compute_delay_risk_curve(cph, ref_row: pd.DataFrame, demand_value: float, times: np.ndarray):
+    row = ref_row.copy()
     if "calls_past_60min" not in row.columns:
-        raise ValueError("Reference row does not contain 'calls_past_60min'. Check cox_reference_row_*.csv.")
-    row.loc[:, "calls_past_60min"] = demand_value_60
+        raise ValueError("Reference row missing 'calls_past_60min'. Check cox_reference_row_*.csv.")
 
-    # lifelines returns survival function DataFrame: index=times, col per row
+    row.loc[:, "calls_past_60min"] = demand_value
+
+    # lifelines returns survival function S(t) = P(T > t)
     sf = cph.predict_survival_function(row, times=times)
-    # Convert to delay risk: 1 - S(t)
-    risk = 1 - sf.iloc[:, 0].values
-    return risk
 
-def plot_city_low_high(city, cph_path, ref_path, meta_path, low_60, high_60, out_name):
-    cph = load_cph(cph_path)
-    meta = read_json(meta_path)
-    censor_time = get_censor_time(meta, default=60)
+    # Delay risk at threshold t: S(t) = P(Response time > t)
+    delay_risk = sf.iloc[:, 0].values
+    return delay_risk
 
-    times = np.arange(0, censor_time + 1, 1)  # 0..60 by 1 minute
+def plot_city_low_high(city: str, cph_path: str, ref_path: str, meta_path: str):
+    # Pull scenarios from saved CSV (traceable)
+    low_60, high_60 = get_city_scenario_values(SCENARIO_PATH, city, "calls_past_60min")
+    print(f"{city} calls_past_60min P10/P90:", low_60, high_60)
+
+    cph = load_cph_model(cph_path)
+    censor_time = get_censor_time_from_meta(meta_path, default=60)
+    times = np.arange(0, censor_time + 1, 1)
 
     ref = load_reference_row(ref_path)
     ref = align_reference_to_model(cph, ref)
 
-    risk_low  = risk_curve_from_cph(cph, ref, low_60, times)
-    risk_high = risk_curve_from_cph(cph, ref, high_60, times)
+    delay_low = compute_delay_risk_curve(cph, ref, low_60, times)
+    delay_high = compute_delay_risk_curve(cph, ref, high_60, times)
 
     plt.figure(figsize=(8, 6))
-    plt.plot(times, risk_low,  label=f"Low demand (P10): {low_60}")
-    plt.plot(times, risk_high, label=f"High demand (P90): {high_60}")
-    plt.title(f"{city} – Delay Risk Curves (1 − S(t))\nVarying calls_past_60min, others fixed")
+    plt.plot(times, delay_low,  label=f"Low demand (P10): {low_60:g}")
+    plt.plot(times, delay_high, label=f"High demand (P90): {high_60:g}")
+    plt.title(f"{city} – Delay Risk Curves (S(t))\nVarying calls_past_60min, others fixed")
     plt.xlabel("Response time threshold t (minutes)")
     plt.ylabel("Delay risk = P(Response time > t)")
     plt.xlim(0, censor_time)
@@ -482,32 +504,15 @@ def plot_city_low_high(city, cph_path, ref_path, meta_path, low_60, high_60, out
     plt.legend()
     plt.tight_layout()
 
-    out_path = f"{FIG_DIR}/{out_name}"
+    out_path = f"{FIG_DIR}/delay_risk_curve_{city.lower()}_low_vs_high_demand.png"
     plt.savefig(out_path, dpi=300, bbox_inches="tight")
     plt.show()
 
     print("Saved:", out_path)
 
-# --- Generate both city plots ---
-plot_city_low_high(
-    city="Toronto",
-    cph_path=CPH_TORONTO,
-    ref_path=REF_TORONTO,
-    meta_path=META_TORONTO,
-    low_60=TOR_LOW_60,
-    high_60=TOR_HIGH_60,
-    out_name="risk_curve_toronto_low_vs_high_demand.png"
-)
-
-plot_city_low_high(
-    city="NYC",
-    cph_path=CPH_NYC,
-    ref_path=REF_NYC,
-    meta_path=META_NYC,
-    low_60=NYC_LOW_60,
-    high_60=NYC_HIGH_60,
-    out_name="risk_curve_nyc_low_vs_high_demand.png"
-)
+# ---- Run for both cities ----
+plot_city_low_high("Toronto", CPH_TORONTO, REF_TORONTO, META_TORONTO)
+plot_city_low_high("NYC",     CPH_NYC,     REF_NYC,     META_NYC)
 
 
 # %%
@@ -548,7 +553,7 @@ def demand_shap_summary(city: str, shap_path: str):
 
     rows = []
     for feat in DEMAND_FEATURES:
-        hit = df[df["feature"].astype(str) == feat]
+        hit = df[df["feature"].astype(str).astype(str).str.strip().str.lower() == feat]
         if hit.empty:
             rows.append({"city": city, "feature": feat, "shap_rank": None, "shap_importance": None, "present": "No"})
         else:
