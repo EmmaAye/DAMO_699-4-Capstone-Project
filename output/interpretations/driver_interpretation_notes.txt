@@ -1,0 +1,26 @@
+PREDICTIVE DRIVER INTERPRETATION REPORT
+Source: cross_city_shap_driver_table
+============================================================
+
+### 1. SHARED DRIVERS (Symmetric Importance)
+These features show consistent ranking across both cities, suggesting universal predictors of delay:
+- location_area: (TO Rank: 1, NYC Rank: 2)
+- unified_call_source: (TO Rank: 3, NYC Rank: 4)
+- hour: (TO Rank: 2, NYC Rank: 3)
+- calls_past_30min: (TO Rank: 5, NYC Rank: 6)
+- month: (TO Rank: 6, NYC Rank: 7)
+- day_of_week: (TO Rank: 7, NYC Rank: 8)
+- season: (TO Rank: 9, NYC Rank: 10)
+- year: (TO Rank: 8, NYC Rank: 9)
+
+### 2. TORONTO-SPECIFIC DRIVERS (High Gap)
+Features that have a significantly higher predictive impact in Toronto:
+
+### 3. NYC-SPECIFIC DRIVERS (High Gap)
+Features that drive the model more heavily for NYC incidents:
+- incident_category: 53.8% higher impact in NYC.
+- calls_past_60min: 44.2% higher impact in NYC.
+
+### 4. CRITICAL INSIGHT: TOP DIVERGENCE
+The feature with the greatest absolute importance gap is 'location_area' 
+with an absolute difference of 0.3446 SHAP units.
