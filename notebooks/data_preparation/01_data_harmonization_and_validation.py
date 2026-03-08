@@ -1428,4 +1428,4 @@ target_table = "workspace.capstone_project.combined_model_ready"
     .saveAsTable(target_table)
 )
 
-print("Saved table:", target_table)workspace.capstone_project.combined_model_ready
+print("Saved table:", target_table)

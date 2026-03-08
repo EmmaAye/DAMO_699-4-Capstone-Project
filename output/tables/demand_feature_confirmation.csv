@@ -1,0 +1,3 @@
+city,calls_past_30min_in_survival,calls_past_60min_in_survival,calls_past_30min_in_predictive,calls_past_60min_in_predictive
+Toronto,No,No,Yes,Yes
+NYC,No,No,Yes,Yes
