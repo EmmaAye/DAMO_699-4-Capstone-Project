@@ -1,9 +1,20 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.19.1
+# ---
 
+# %%
 
+# !pip install lightgbm
 # ============================================
 # Sprint 5 / RQ5 (Predictive Only): Toronto Quantile Models (P90 / P95)
 # ============================================
-#%pip install lightgbm
+
 import os, gc
 import numpy as np
 import pandas as pd

@@ -1,9 +1,21 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.19.1
+# ---
+
+# %%
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 from pyspark.ml.classification import RandomForestClassifier
 from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.functions import vector_to_array
 import datetime
+
 
 # 1. Load the Toronto Operational Data
 df = spark.table("workspace.capstone_project.toronto_model_ready")
@@ -83,7 +95,7 @@ forecast_enriched_df = forecast_enriched_df.fillna({
     "unified_alarm_level": 1
 })
 
-# Assemble features for forecast data 
+# Assemble features for forecast data
 forecast_final_ml = assembler.transform(forecast_enriched_df)
 
 # 5. Run Prediction (Risk Probabilities)
@@ -115,3 +127,9 @@ toronto_risk_forecast_output = "workspace.capstone_project.toronto_risk_forecast
 final_forecast_df.write.mode("overwrite").saveAsTable(toronto_risk_forecast_output)
 
 print(f"Operational Risk Forecast complete. Table saved: {toronto_risk_forecast_output}")
+
+# Print top 24 rows
+final_forecast_df.show(24, truncate=False)
+
+# Optional Databricks notebook display
+display(final_forecast_df)

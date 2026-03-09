@@ -1,4 +1,15 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.19.1
+# ---
 
+# %%
+# !pip install lightgbm
 # ============================================
 # Sprint 5 / RQ5 (Predictive Only): NYC Quantile Models (P90 / P95)
 # Target: response_minutes (tail risk)
@@ -8,7 +19,7 @@
 # - Pinball loss computed
 # - Validation plots saved (PNG)
 # ============================================
-#%pip install lightgbm
+
 # 1) Setup and Imports
 import os, gc
 import numpy as np
