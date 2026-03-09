@@ -40,6 +40,14 @@ from .cox_hazard_lib import (
     hr_table,
     fit_stats,
     summarize_driver_strength,
+    get_baseline_hazard_series,
+    align_and_smooth_hazard,
+    median_survival_time_interp,
+    survival_at_times,
+    hazard_peak,
+    get_concordance,
+    plot_survival_overlay,
+    plot_hazard_overlay,
 )
 
 from .constants import (

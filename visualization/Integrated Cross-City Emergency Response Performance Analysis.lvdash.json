@@ -1,0 +1,315 @@
+{
+  "datasets": [
+    {
+      "name": "b82b9527",
+      "displayName": "nyc_model_ready",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.nyc_model_ready"
+      ]
+    },
+    {
+      "name": "25a85096",
+      "displayName": "toronto_model_ready",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.toronto_model_ready"
+      ]
+    },
+    {
+      "name": "ac05473d",
+      "displayName": "combined_model_ready",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.combined_model_ready"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "f239ed96",
+      "displayName": "Executive Overview",
+      "layout": [
+        {
+          "widget": {
+            "name": "6ba7d4bf",
+            "multilineTextboxSpec": {
+              "lines": [
+                "- Incident count comparison (Toronto vs NYC)\n",
+                "- Mean / Median / P90 / P95 comparison\n",
+                "- Delay rate comparison\n",
+                "- Censoring comparison table\n",
+                "- KPI cards:\n",
+                "- Total incidents\n",
+                "- Delay %\n",
+                "- Median response time\n",
+                "- % censored"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "722abd13",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "b82b9527",
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true
+              },
+              "widgetType": "counter",
+              "encodings": {}
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 0,
+            "width": 6,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "529ef8a1",
+      "displayName": "Response Time & Tail Risk",
+      "layout": [
+        {
+          "widget": {
+            "name": "d618fbd1",
+            "multilineTextboxSpec": {
+              "lines": [
+                "- Response distribution histogram (Toronto vs NYC)\n",
+                "- SLA breach chart (>5, >8 minutes)\n",
+                "- Threshold exceedance chart (8 & 10 minutes)"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "ecb986f5",
+      "displayName": "Temporal Patterns",
+      "layout": [
+        {
+          "widget": {
+            "name": "2dff3344",
+            "multilineTextboxSpec": {
+              "lines": [
+                "- Hourly response trend (avg + P90)\n",
+                "- Incident volume by hour\n",
+                "- Hour × Day heatmap\n",
+                "- ONE additional comparison (Weekend vs Weekday OR Seasonal)"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "6a6423a0",
+      "displayName": "Spatial & Operational Signals",
+      "layout": [
+        {
+          "widget": {
+            "name": "753e3d6e",
+            "multilineTextboxSpec": {
+              "lines": [
+                "- P90 response by area\n",
+                "- Volume vs Performance scatter\n",
+                "- Composite tail risk score (top areas)\n",
+                "- Operational signals (alarm level or call source) - Optional"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "c93f94f5",
+      "displayName": "Predictive Modeling",
+      "layout": [
+        {
+          "widget": {
+            "name": "57529707",
+            "multilineTextboxSpec": {
+              "lines": [
+                "- Model performance table (Accuracy, F1, AUC)\n",
+                "- Confusion matrix\n",
+                "- Feature importance chart \n",
+                "- Risk distribution histogram (add only if it adds something unique.)"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "1810e10e",
+      "displayName": "Explainability (SHAP)",
+      "layout": [
+        {
+          "widget": {
+            "name": "baba9ebe",
+            "multilineTextboxSpec": {
+              "lines": [
+                "- SHAP global importance (summary bar plot)\n",
+                "- SHAP summary (beeswarm)\n",
+                "- 1 dependency plot\n",
+                "- Interpretation text box"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "43d86314",
+      "displayName": "Survival Analysis",
+      "layout": [
+        {
+          "widget": {
+            "name": "1621f716",
+            "multilineTextboxSpec": {
+              "lines": [
+                "- Kaplan–Meier overlay (primary visual)\n",
+                "- Log-rank summary box\n",
+                "- Hazard ratio comparison chart\n",
+                "- Optional: ONE stratified survival plot"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "0f41acff",
+      "displayName": "Key Insights & Analytical Contribution",
+      "layout": [
+        {
+          "widget": {
+            "name": "626c2da0",
+            "multilineTextboxSpec": {
+              "lines": [
+                "1. Analytical Contribution\n",
+                "\n",
+                "A short section clearly stating how this study extends traditional response-time evaluation by:\n",
+                "\n",
+                "- Emphasizing tail-risk metrics rather than averages\n",
+                "- Integrating survival analysis with statistical testing\n",
+                "- Combining predictive modeling with explainable AI\n",
+                "- Enabling structured cross-city comparison\n",
+                "\n",
+                "This section should explicitly differentiate the methodology from conventional descriptive approaches.\n",
+                "\n",
+                "2. Structural Performance Differences\n",
+                "\n",
+                "Combine:\n",
+                "\n",
+                "- Cross-City Performance Summary\n",
+                "- Log-rank statistical support\n",
+                "- Central vs tail differences\n",
+                "\n",
+                "Everything about “which city performs differently” lives here\n",
+                "\n",
+                "3. When & Where Risk Concentrates\n",
+                "\n",
+                "Combine:\n",
+                "\n",
+                "- Temporal Risk Insights\n",
+                "- Spatial & Operational Insights\n",
+                "- Time + location are both structural context.<br>They belong together. \n",
+                "\n",
+                "4. Delay Drivers & System Interpretation\n",
+                "\n",
+                "Combine:\n",
+                "\n",
+                "- Model-based delay drivers\n",
+                "- SHAP insights\n",
+                "- Operational interpretation\n",
+                "\n",
+                "Put drivers + meaning together.This avoids separating “drivers” and “implications” artificially."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 10,
+            "height": 13
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}
