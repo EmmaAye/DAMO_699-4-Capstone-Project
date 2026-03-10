@@ -116,13 +116,7 @@ final_forecast_df = final_forecast_df.withColumn(
 )
 
 # 6. Store for Dashboard Integration
-toronto_risk_forecast_output = "workspace.capstone_project.toronto_risk_forecast_output"
-final_forecast_df.write.mode("overwrite").saveAsTable(toronto_risk_forecast_output)
+nyc_risk_forecast_output = "workspace.capstone_project.nyc_risk_forecast_output"
+final_forecast_df.write.mode("overwrite").saveAsTable(nyc_risk_forecast_output)
 
-print(f"Operational Risk Forecast complete. Table saved: {toronto_risk_forecast_output}")
-
-# Print top 24 rows
-final_forecast_df.show(24, truncate=False)
-
-# Optional Databricks notebook display
-display(final_forecast_df)
+print(f"Operational Risk Forecast complete. Table saved: {nyc_risk_forecast_output}")
