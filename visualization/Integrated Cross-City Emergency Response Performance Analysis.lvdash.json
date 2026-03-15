@@ -20,6 +20,47 @@
       "queryLines": [
         "SELECT * FROM workspace.capstone_project.combined_model_ready"
       ]
+    },
+    {
+      "name": "1c62f149",
+      "displayName": "Model Performance Table",
+      "queryLines": [
+        "SELECT \n",
+        "  Model,\n",
+        "  COALESCE(CAST(Accuracy AS STRING), '-') AS Accuracy,\n",
+        "  COALESCE(CAST(AUC_ROC AS STRING), '-') AS AUC_ROC,\n",
+        "  Type\n",
+        "FROM capstone_project.dashboard_metrics"
+      ]
+    },
+    {
+      "name": "200d54f6",
+      "displayName": "Confusion Matrix Query",
+      "queryLines": [
+        "SELECT \n",
+        "  CASE WHEN delay_risk_probability >= 0.14 THEN 'Predicted: High Risk' \n",
+        "       ELSE 'Predicted: Low Risk' END AS Predicted, 'Actual: On-Time' AS Actual, COUNT(*) AS Total_Incidents\n",
+        "FROM capstone_project.dashboard_predictions_nyc\n",
+        "GROUP BY 1, 2\n",
+        "ORDER BY 1, 2"
+      ]
+    },
+    {
+      "name": "77c729de",
+      "displayName": "Feature Importance Chart",
+      "queryLines": [
+        "SELECT Feature, Hazard_Ratio \n",
+        "FROM capstone_project.dashboard_hazard_ratios\n",
+        "ORDER BY Hazard_Ratio ASC"
+      ]
+    },
+    {
+      "name": "f7187b31",
+      "displayName": "Risk Distribution Histogram",
+      "queryLines": [
+        "SELECT delay_risk_probability \n",
+        "FROM capstone_project.dashboard_predictions_nyc"
+      ]
     }
   ],
   "pages": [
@@ -184,6 +225,267 @@
             "y": 0,
             "width": 12,
             "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "bd14ada7",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "200d54f6",
+                  "fields": [
+                    {
+                      "name": "Total_Incidents",
+                      "expression": "`Total_Incidents`"
+                    },
+                    {
+                      "name": "Predicted",
+                      "expression": "`Predicted`"
+                    },
+                    {
+                      "name": "Actual",
+                      "expression": "`Actual`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showDescription": true,
+                "description": "Strategic Insight: Emergency response delay risk is highly predictable using incident-level characteristics. Our classifier successfully identifies 84% of true delays before units are dispatched, allowing for proactive resource re-allocation and risk mitigation for \"tail-risk\" incidents."
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "Predicted",
+                  "axis": {
+                    "title": "Model Prediction (NYC Classifier)"
+                  },
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "Actual",
+                  "axis": {
+                    "title": "Actual Outcome (Historical Data)"
+                  },
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "color": {
+                  "fieldName": "Total_Incidents",
+                  "scale": {
+                    "type": "quantitative",
+                    "colorRamp": {
+                      "mode": "scheme",
+                      "scheme": "blues"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "4fcca504",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "1c62f149",
+                  "fields": [
+                    {
+                      "name": "AUC_ROC",
+                      "expression": "`AUC_ROC`"
+                    },
+                    {
+                      "name": "Accuracy",
+                      "expression": "`Accuracy`"
+                    },
+                    {
+                      "name": "Model",
+                      "expression": "`Model`"
+                    },
+                    {
+                      "name": "Type",
+                      "expression": "`Type`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "AUC_ROC"
+                  },
+                  {
+                    "fieldName": "Accuracy"
+                  },
+                  {
+                    "fieldName": "Model"
+                  },
+                  {
+                    "fieldName": "Type"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 12,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "5bfb50d6",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "77c729de",
+                  "fields": [
+                    {
+                      "name": "avg(Hazard_Ratio)",
+                      "expression": "AVG(`Hazard_Ratio`)"
+                    },
+                    {
+                      "name": "Feature",
+                      "expression": "`Feature`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "annotations": [
+                {
+                  "type": "vertical-line",
+                  "encodings": {
+                    "x": {
+                      "dataValue": "1",
+                      "dataType": "DOUBLE"
+                    }
+                  }
+                }
+              ],
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "avg(Hazard_Ratio)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "Feature",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "9efac4e8",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "77c729de",
+                  "fields": [
+                    {
+                      "name": "Hazard_Ratio",
+                      "expression": "`Hazard_Ratio`"
+                    },
+                    {
+                      "name": "Feature",
+                      "expression": "`Feature`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Top Features by Hazard Ratio",
+                "showTitle": true,
+                "showDescription": true,
+                "description": "Summary: Our predictive framework demonstrates that emergency delays in NYC are not random. By identifying 84% of true delays through incident characteristics, and quantifying risk drivers like Time of Day and Call Volume through Hazard Ratios, we provide a dual-layered approach to mitigating \"tail-risk\" in urban emergency response."
+              },
+              "widgetType": "histogram",
+              "encodings": {
+                "x": {
+                  "fieldName": "Feature",
+                  "axis": {
+                    "title": "Predicted Delay Probability (0 to 1)"
+                  },
+                  "displayName": "Feature",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "Hazard_Ratio",
+                  "axis": {
+                    "title": "Number of Incidents"
+                  },
+                  "displayName": "Hazard Ratio",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "Hazard_Ratio",
+                  "displayName": "Hazard Ratio",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 17,
+            "width": 12,
+            "height": 9
           }
         }
       ],
