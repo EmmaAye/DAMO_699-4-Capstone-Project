@@ -127,3 +127,9 @@ toronto_risk_forecast_output = "workspace.capstone_project.toronto_risk_forecast
 final_forecast_df.write.mode("overwrite").saveAsTable(toronto_risk_forecast_output)
 
 print(f"Operational Risk Forecast complete. Table saved: {toronto_risk_forecast_output}")
+
+# Print top 24 rows
+final_forecast_df.show(24, truncate=False)
+
+# Optional Databricks notebook display
+display(final_forecast_df)

@@ -9,7 +9,7 @@
 # ---
 
 # %%
-
+# !pip install lightgbm
 # ============================================
 # Sprint 5 / RQ5 (Predictive Only): NYC Quantile Models (P90 / P95)
 # Target: response_minutes (tail risk)

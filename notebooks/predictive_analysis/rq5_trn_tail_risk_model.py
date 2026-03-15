@@ -10,7 +10,7 @@
 
 # %%
 
-
+# !pip install lightgbm
 # ============================================
 # Sprint 5 / RQ5 (Predictive Only): Toronto Quantile Models (P90 / P95)
 # ============================================
