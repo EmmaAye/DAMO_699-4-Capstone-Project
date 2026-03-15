@@ -13,24 +13,18 @@
 import gc
 from pyspark.ml.feature import VectorAssembler, FeatureHasher
 from pyspark.ml import Pipeline
-from pyspark.ml.classification import LogisticRegression, RandomForestClassifier
+from pyspark.ml.classification import LogisticRegression, RandomForestClassifier, GBTClassifier
 from pyspark.ml.evaluation import BinaryClassificationEvaluator, MulticlassClassificationEvaluator
 from pyspark.sql.functions import col
 
 # 2: Data Loading & Preprocessing
-print("Loading Toronto dataset...")
-df = spark.table("workspace.capstone_project.toronto_model_ready")
+print("Loading NYC dataset...")
+df = spark.table("workspace.capstone_project.nyc_model_ready")
 df = df.filter(col("delay_indicator").isNotNull())
 df.groupBy("delay_indicator").count().show()
 
 # Categorical columns
 categorical_cols = ['incident_category', 'season', 'unified_call_source', 'location_area']
-
-# Numeric columns
-numeric_cols = [
-    'hour', 'day_of_week', 'month', 'year',
-    'unified_alarm_level', 'calls_past_30min', 'calls_past_60min'
-]
 
 # Feature hashing
 hasher = FeatureHasher(
@@ -38,6 +32,12 @@ hasher = FeatureHasher(
     outputCol="categorical_features",
     numFeatures=512
 )
+
+# Numeric columns
+numeric_cols = [
+    'hour', 'day_of_week', 'month', 'year',
+    'unified_alarm_level', 'calls_past_30min', 'calls_past_60min'
+]
 
 # Feature assembly
 assembler = VectorAssembler(
@@ -80,7 +80,7 @@ f1_eval = MulticlassClassificationEvaluator(
     metricName="f1"
 )
 
-# 5: Model Definitions (Baseline + Proposed)
+# 5: Model Definitions
 models = {
     "Logistic Regression": LogisticRegression(
         featuresCol="features",
@@ -95,6 +95,14 @@ models = {
         numTrees=50,
         maxDepth=5,
         seed=42
+    ),
+    "GBT Classifier": GBTClassifier(
+        featuresCol="features",
+        labelCol="delay_indicator",
+        maxIter=20,
+        maxDepth=5,
+        stepSize=0.1,
+        seed=42
     )
 }
 
@@ -103,8 +111,8 @@ results = []
 
 for model_name, classifier in models.items():
     print("\n" + "=" * 80)
-    print(f"Training {model_name}...")
-    
+    print(f"Training {model_name} on NYC...")
+
     pipeline = Pipeline(stages=[hasher, assembler, classifier])
     model = pipeline.fit(train_df)
     print(f"{model_name} training complete!")
@@ -133,19 +141,21 @@ for model_name, classifier in models.items():
 
     # Save model
     safe_name = model_name.lower().replace(" ", "_")
-    save_path = f"/Volumes/workspace/capstone_project/models/delay_classifier_toronto_{safe_name}"
+    save_path = f"/Volumes/workspace/capstone_project/models/delay_classifier_nyc_{safe_name}"
     print(f"Saving {model_name} model to: {save_path}")
     model.write().overwrite().save(save_path)
 
     results.append((model_name, auc, auc_pr, precision, recall, f1))
 
+    # Clean up memory
     del model
     del predictions
+    del pipeline
     gc.collect()
 
 # 7: Final Summary Table
 print("\n" + "=" * 80)
-print("FINAL MODEL PERFORMANCE SUMMARY - TORONTO")
+print("FINAL MODEL PERFORMANCE SUMMARY - NYC")
 print("=" * 80)
 
 print(f"{'Model':<22} {'AUC-ROC':<12} {'PR-AUC':<12} {'Precision':<12} {'Recall':<12} {'F1 Score':<12}")

@@ -9,6 +9,17 @@
 # ---
 
 # %%
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.19.1
+# ---
+
+# %%
 # ============================================
 # Sprint 7 / RQ3 Subtask: Toronto -> NYC Cross-City Transfer (Predictive Only)
 # Uses teammate delay-classifier pipeline (Hasher + Assembler + RF / LR)
@@ -45,7 +56,7 @@ SAVE_RESULTS_TABLE = "workspace.capstone_project.transfer_test_toronto_to_nyc_sp
 
 LABEL_COL = "delay_indicator"
 
-DESIRED_CATEGORICAL = ["incident_category", "season", "unified_call_source", "location_area"]
+DESIRED_CATEGORICAL = ["incident_category", "season", "unified_call_source"]
 DESIRED_NUMERIC     = [
     "hour", "day_of_week", "month", "year", "unified_alarm_level",
     "calls_past_30min", "calls_past_60min"

@@ -21,9 +21,8 @@ from pyspark.ml.functions import vector_to_array
 df = spark.table("workspace.capstone_project.nyc_model_ready")
 
 feature_cols = [
-    "hour",
-    "day_of_week",
-    "unified_alarm_level",
+    "incident_category",
+    "location_area",
     "calls_past_30min",
     "calls_past_60min"
 ]
