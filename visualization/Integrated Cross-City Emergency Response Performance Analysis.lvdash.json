@@ -22,6 +22,13 @@
         "-- SELECT DISTINCT city\r\n",
         "-- FROM workspace.capstone_project.combined_model_ready\r\n",
         "-- ORDER BY city"
+      ],
+      "columns": [
+        {
+          "displayName": "hazard_ratio",
+          "description": "Hazard ratio for each city: compares delay_indicator (events) to event_indicator (total at-risk incidents).",
+          "expression": "TRY_DIVIDE(SUM(delay_indicator), SUM(event_indicator))"
+        }
       ]
     },
     {
@@ -419,6 +426,81 @@
             "y": 0,
             "width": 12,
             "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "84aee825",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ac05473d",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "measure(hazard_ratio)",
+                      "expression": "MEASURE(`hazard_ratio`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Hazard Ratio Comparison",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "city",
+                  "displayName": "City",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(hazard_ratio)",
+                  "format": {
+                    "type": "number-plain",
+                    "decimalPlaces": {
+                      "type": "exact",
+                      "places": 2
+                    },
+                    "abbreviation": "none"
+                  },
+                  "displayName": "Hazard Ratio",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "city",
+                  "legend": {
+                    "position": "right"
+                  },
+                  "displayName": "City",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 1,
+            "y": 3,
+            "width": 6,
+            "height": 6
           }
         }
       ],
