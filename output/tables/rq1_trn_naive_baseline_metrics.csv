@@ -1,0 +1,2 @@
+Model,AUC-ROC,Precision,Recall,F1-Score,Accuracy
+Naive Majority Baseline,0.5,0.0,0.0,0.0,0.92
