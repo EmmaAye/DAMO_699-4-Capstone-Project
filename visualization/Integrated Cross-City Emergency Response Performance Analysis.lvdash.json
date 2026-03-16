@@ -28,6 +28,26 @@
           "displayName": "hazard_ratio",
           "description": "Hazard ratio for each city: compares delay_indicator (events) to event_indicator (total at-risk incidents).",
           "expression": "TRY_DIVIDE(SUM(delay_indicator), SUM(event_indicator))"
+        },
+        {
+          "displayName": "delay_rate_percent",
+          "description": "Delay rate as a proportion of delayed incidents per city (SUM(delay_indicator) / COUNT(*))",
+          "expression": "TRY_DIVIDE(SUM(delay_indicator), COUNT(*))"
+        },
+        {
+          "displayName": "censored_incidents",
+          "description": "Number of censored incidents (response_minutes is NULL)",
+          "expression": "SUM(CASE WHEN response_minutes IS NULL THEN 1 ELSE 0 END)"
+        },
+        {
+          "displayName": "censor_rate_percent",
+          "description": "Censor rate as percent of censored incidents (SUM(CASE WHEN response_minutes IS NULL THEN 1 ELSE 0 END) / COUNT(*) * 100)",
+          "expression": "TRY_MULTIPLY(TRY_DIVIDE(SUM(CASE WHEN response_minutes IS NULL THEN 1 ELSE 0 END), COUNT(*)), 100)"
+        },
+        {
+          "displayName": "prob_exceed_8min_delay",
+          "description": "Probability to exceed 8 minute delay threshold for each city.",
+          "expression": "TRY_DIVIDE(SUM(CASE WHEN response_minutes > 8 THEN 1 ELSE 0 END), COUNT(*))"
         }
       ]
     },
@@ -60,6 +80,19 @@
         "GROUP BY city\r\n",
         "ORDER BY city"
       ]
+    },
+    {
+      "name": "213baf17",
+      "displayName": "City Incident Response Delay Summary",
+      "queryLines": [
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    COUNT(*) AS total_incidents,\r\n",
+        "    SUM(CASE WHEN response_minutes > 8 THEN 1 ELSE 0 END) AS delayed_incidents,\r\n",
+        "    SUM(CASE WHEN response_minutes > 8 THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS delay_rate\r\n",
+        "FROM workspace.capstone_project.combined_model_ready\r\n",
+        "GROUP BY city"
+      ]
     }
   ],
   "pages": [
@@ -67,30 +100,6 @@
       "name": "f239ed96",
       "displayName": "Executive Overview",
       "layout": [
-        {
-          "widget": {
-            "name": "6ba7d4bf",
-            "multilineTextboxSpec": {
-              "lines": [
-                "- Incident count comparison (Toronto vs NYC)\n",
-                "- Mean / Median / P90 / P95 comparison\n",
-                "- Delay rate comparison\n",
-                "- Censoring comparison table\n",
-                "- KPI cards:\n",
-                "- Total incidents\n",
-                "- Delay %\n",
-                "- Median response time\n",
-                "- % censored"
-              ]
-            }
-          },
-          "position": {
-            "x": 7,
-            "y": 7,
-            "width": 4,
-            "height": 4
-          }
-        },
         {
           "widget": {
             "name": "nyc-fire-incident-counts",
@@ -261,10 +270,293 @@
             }
           },
           "position": {
+            "x": 4,
+            "y": 2,
+            "width": 8,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "fa4edd41",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ac05473d",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "measure(delay_rate_percent)",
+                      "expression": "MEASURE(`delay_rate_percent`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Delay Rate Comparison (NYC vs Toronto)",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "city",
+                  "displayName": "City",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "natural-order"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(delay_rate_percent)",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "exact",
+                      "places": 2
+                    }
+                  },
+                  "displayName": "Delay Rate (%)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "city",
+                  "legend": {
+                    "position": "right"
+                  },
+                  "displayName": "City",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "NYC",
+                        "color": {
+                          "themeColorType": "fontColor"
+                        }
+                      },
+                      {
+                        "value": "Toronto",
+                        "color": {
+                          "themeColorType": "selectionColor"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
             "x": 0,
             "y": 4,
-            "width": 11,
+            "width": 4,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "e6530733",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ac05473d",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    },
+                    {
+                      "name": "measure(censored_incidents)",
+                      "expression": "MEASURE(`censored_incidents`)"
+                    },
+                    {
+                      "name": "measure(censor_rate_percent)",
+                      "expression": "MEASURE(`censor_rate_percent`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "rowsPerPage": 25,
+              "frame": {
+                "title": "Censoring Comparison Table",
+                "showTitle": true,
+                "headerAlignment": "left"
+              },
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "city",
+                    "displayName": "City"
+                  },
+                  {
+                    "fieldName": "count(*)",
+                    "displayName": "Total Incidents"
+                  },
+                  {
+                    "fieldName": "measure(censored_incidents)",
+                    "displayName": "Censored Incidents",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operand": {
+                              "type": "data-value",
+                              "value": "0"
+                            },
+                            "operator": ">"
+                          },
+                          "backgroundColor": "#ffefd5",
+                          "foregroundColor": "#d2691e"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "measure(censor_rate_percent)",
+                    "displayName": "Censor Rate (%)",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operand": {
+                              "type": "data-value",
+                              "value": "0.01"
+                            },
+                            "operator": ">="
+                          },
+                          "backgroundColor": "#ffdcdc",
+                          "foregroundColor": "#5d0000"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 5,
+            "width": 6,
             "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "year-filter",
+            "queries": [
+              {
+                "name": "dashboards/01f1170b58b61f838c4dbff1448f9be1/datasets/01f1217f2c8f180eb7bf7ac267b530c4_year",
+                "query": {
+                  "datasetName": "ac05473d",
+                  "fields": [
+                    {
+                      "name": "year",
+                      "expression": "`year`"
+                    },
+                    {
+                      "name": "year_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Year Filter",
+                "showTitle": true
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "year",
+                    "queryName": "dashboards/01f1170b58b61f838c4dbff1448f9be1/datasets/01f1217f2c8f180eb7bf7ac267b530c4_year"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 10,
+            "y": 5,
+            "width": 2,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "month-filter",
+            "queries": [
+              {
+                "name": "dashboards/01f1170b58b61f838c4dbff1448f9be1/datasets/01f1217f2c8f180eb7bf7ac267b530c4_month",
+                "query": {
+                  "datasetName": "ac05473d",
+                  "fields": [
+                    {
+                      "name": "month",
+                      "expression": "`month`"
+                    },
+                    {
+                      "name": "month_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Month Filter",
+                "showTitle": true
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "month",
+                    "queryName": "dashboards/01f1170b58b61f838c4dbff1448f9be1/datasets/01f1217f2c8f180eb7bf7ac267b530c4_month"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 10,
+            "y": 6,
+            "width": 2,
+            "height": 2
           }
         }
       ],
@@ -566,6 +858,33 @@
         }
       ],
       "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "b6b91bf4",
+      "displayName": "Global Filters",
+      "layout": [
+        {
+          "widget": {
+            "name": "c060cf38",
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-single-select",
+              "encodings": {},
+              "frame": {
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS",
       "layoutVersion": "GRID_V1"
     }
   ],
