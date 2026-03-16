@@ -1,0 +1,4 @@
+Model,ROC_AUC_from_curve
+GBT,0.684
+Logistic Regression,0.668
+Random Forest,0.646

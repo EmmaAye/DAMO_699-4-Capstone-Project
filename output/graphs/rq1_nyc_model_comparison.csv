@@ -1,0 +1,4 @@
+Model,AUC-ROC,Precision,Recall,F1-Score
+GBT,0.684,0.832,0.859,0.794
+Logistic Regression,0.668,0.738,0.859,0.794
+Random Forest,0.646,0.738,0.859,0.794
