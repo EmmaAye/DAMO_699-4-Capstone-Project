@@ -189,6 +189,104 @@
         "FROM workspace.capstone_project.combined_model_ready\n",
         "GROUP BY city"
       ]
+    },
+    {
+      "name": "1e1abae3",
+      "displayName": "hourly_response_trend",
+      "queryLines": [
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    hour,\r\n",
+        "    AVG(response_minutes) AS avg_response,\r\n",
+        "    percentile_approx(response_minutes, 0.9) AS p90_response\r\n",
+        "FROM workspace.capstone_project.combined_model_ready\r\n",
+        "WHERE response_minutes IS NOT NULL\r\n",
+        "GROUP BY city, hour\r\n",
+        "ORDER BY city, hour"
+      ]
+    },
+    {
+      "name": "8b6e4ee3",
+      "displayName": "incident_vol_by_hour",
+      "queryLines": [
+        "WITH hourly_counts AS (\r\n",
+        "    SELECT\r\n",
+        "        city,\r\n",
+        "        DATE(incident_datetime) AS incident_date,\r\n",
+        "        hour,\r\n",
+        "        COUNT(*) AS hourly_incidents\r\n",
+        "    FROM workspace.capstone_project.combined_model_ready\r\n",
+        "    GROUP BY city, DATE(incident_datetime), hour\r\n",
+        ")\r\n",
+        "\r\n",
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    hour,\r\n",
+        "    AVG(hourly_incidents) AS avg_incident_count\r\n",
+        "FROM hourly_counts\r\n",
+        "GROUP BY city, hour\r\n",
+        "ORDER BY hour"
+      ]
+    },
+    {
+      "name": "7c713465",
+      "displayName": "hour_day_heatmap",
+      "queryLines": [
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    CASE day_of_week\r\n",
+        "        WHEN 2 THEN 'Mon'\r\n",
+        "        WHEN 3 THEN 'Tue'\r\n",
+        "        WHEN 4 THEN 'Wed'\r\n",
+        "        WHEN 5 THEN 'Thu'\r\n",
+        "        WHEN 6 THEN 'Fri'\r\n",
+        "        WHEN 7 THEN 'Sat'\r\n",
+        "        WHEN 1 THEN 'Sun'\r\n",
+        "    END AS day_name,\r\n",
+        "    CASE day_of_week\r\n",
+        "        WHEN 2 THEN 1\r\n",
+        "        WHEN 3 THEN 2\r\n",
+        "        WHEN 4 THEN 3\r\n",
+        "        WHEN 5 THEN 4\r\n",
+        "        WHEN 6 THEN 5\r\n",
+        "        WHEN 7 THEN 6\r\n",
+        "        WHEN 1 THEN 7\r\n",
+        "    END AS day_order,\r\n",
+        "    hour,\r\n",
+        "    AVG(response_minutes) AS avg_response\r\n",
+        "FROM workspace.capstone_project.combined_model_ready\r\n",
+        "WHERE response_minutes IS NOT NULL\r\n",
+        "GROUP BY\r\n",
+        "    city,\r\n",
+        "    day_of_week,\r\n",
+        "    hour\r\n",
+        "ORDER BY\r\n",
+        "    city,\r\n",
+        "    day_order,\r\n",
+        "    hour"
+      ]
+    },
+    {
+      "name": "5821d547",
+      "displayName": "weekend_vs_weekday",
+      "queryLines": [
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    CASE\r\n",
+        "        WHEN day_of_week IN (1, 7) THEN 'Weekend'\r\n",
+        "        ELSE 'Weekday'\r\n",
+        "    END AS day_type,\r\n",
+        "    percentile_approx(response_minutes, 0.9) AS p90_response\r\n",
+        "FROM workspace.capstone_project.combined_model_ready\r\n",
+        "WHERE response_minutes IS NOT NULL\r\n",
+        "GROUP BY\r\n",
+        "    city,\r\n",
+        "    CASE\r\n",
+        "        WHEN day_of_week IN (1, 7) THEN 'Weekend'\r\n",
+        "        ELSE 'Weekday'\r\n",
+        "    END\r\n",
+        "ORDER BY city, day_type"
+      ]
     }
   ],
   "pages": [
@@ -1022,13 +1120,10 @@
       "layout": [
         {
           "widget": {
-            "name": "2dff3344",
+            "name": "f005d86a",
             "multilineTextboxSpec": {
               "lines": [
-                "- Hourly response trend (avg + P90)\n",
-                "- Incident volume by hour\n",
-                "- Hour × Day heatmap\n",
-                "- ONE additional comparison (Weekend vs Weekday OR Seasonal)"
+                "<span style=\"text-align:center;display:block\"><span style=\"font-size: 24px;color: #FFAB00;\">**Temporal Patterns**</span></span>"
               ]
             }
           },
@@ -1036,7 +1131,454 @@
             "x": 0,
             "y": 0,
             "width": 12,
-            "height": 2
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "hourly-average-response-trend-toronto-vs-nyc",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "1e1abae3",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "hour",
+                      "expression": "`hour`"
+                    },
+                    {
+                      "name": "avg_response",
+                      "expression": "`avg_response`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showDescription": false,
+                "showTitle": true,
+                "title": "Hourly Average Response Trend (Toronto vs NYC)"
+              },
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "hour",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg_response",
+                  "displayName": "Response Time (min)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "city",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "NYC",
+                        "color": "#D9A249"
+                      },
+                      {
+                        "value": "Toronto",
+                        "color": "#57D736"
+                      }
+                    ]
+                  }
+                },
+                "label": {
+                  "show": true,
+                  "display": {
+                    "type": "y-min-and-max"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "362fcf60",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "1e1abae3",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "hour",
+                      "expression": "`hour`"
+                    },
+                    {
+                      "name": "p90_response",
+                      "expression": "`p90_response`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showDescription": false,
+                "showTitle": true,
+                "title": "Hourly P90 Response Trend (Toronto vs NYC)"
+              },
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "hour",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "p90_response",
+                  "displayName": "Response Time (min)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "city",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "NYC",
+                        "color": "#D9A249"
+                      },
+                      {
+                        "value": "Toronto",
+                        "color": "#57D736"
+                      }
+                    ]
+                  }
+                },
+                "label": {
+                  "show": true,
+                  "display": {
+                    "type": "y-min-and-max"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 1,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "incident-volume-by-hour",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "8b6e4ee3",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "hour",
+                      "expression": "`hour`"
+                    },
+                    {
+                      "name": "avg_incident_count",
+                      "expression": "`avg_incident_count`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "facet": {
+                "type": "wrap",
+                "fieldName": "city",
+                "layout": {
+                  "row": {
+                    "type": "count",
+                    "value": 3
+                  }
+                },
+                "displayName": "Average Incident Volume by Hour (NYC vs Toronto)",
+                "scale": {
+                  "type": "categorical"
+                }
+              },
+              "version": 3,
+              "frame": {
+                "title": "Average Incident Volume by Hour",
+                "showTitle": false
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "hour",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg_incident_count",
+                  "displayName": "Incident Count",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "city",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "NYC",
+                        "color": "#D5C943"
+                      },
+                      {
+                        "value": "Toronto",
+                        "color": {
+                          "themeColorType": "selectionColor"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 7,
+            "width": 7,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "average-response-time-heatmap-hour-x-day",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "7c713465",
+                  "fields": [
+                    {
+                      "name": "avg_response",
+                      "expression": "`avg_response`"
+                    },
+                    {
+                      "name": "hour",
+                      "expression": "`hour`"
+                    },
+                    {
+                      "name": "day_name",
+                      "expression": "`day_name`"
+                    },
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "facet": {
+                "type": "wrap",
+                "fieldName": "city",
+                "displayName": "Average Response Time Heatmap (Hour x Day)",
+                "scale": {
+                  "type": "categorical"
+                }
+              },
+              "version": 3,
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "selectionColor"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": false,
+                "title": ""
+              },
+              "widgetType": "heatmap",
+              "encodings": {
+                "x": {
+                  "fieldName": "hour",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "day_name",
+                  "displayName": "Day",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "color": {
+                  "fieldName": "avg_response",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  },
+                  "legend": {
+                    "position": "right"
+                  },
+                  "displayName": "Response Time",
+                  "scale": {
+                    "type": "quantitative",
+                    "colorRamp": {
+                      "mode": "scheme",
+                      "scheme": "redyellowblue"
+                    },
+                    "reverse": true
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 13,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "weekday-weekend-response-time-toronto-nyc-overlay",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "5821d547",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "day_type",
+                      "expression": "`day_type`"
+                    },
+                    {
+                      "name": "p90_response",
+                      "expression": "`p90_response`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "facet": {
+                "type": "wrap",
+                "fieldName": "city",
+                "layout": {
+                  "row": {
+                    "type": "count",
+                    "value": 4
+                  }
+                },
+                "displayName": "Weekday vs Weekend P90 Response Time",
+                "scale": {
+                  "type": "categorical"
+                }
+              },
+              "version": 3,
+              "frame": {
+                "title": "Weekday vs Weekends P90 Response Time  for Toronto and NYC",
+                "showTitle": false
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "selectionColor"
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "day_type",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "p90_response",
+                  "displayName": "Response Time",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "city",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "NYC",
+                        "color": "#D5C943"
+                      },
+                      {
+                        "value": "Toronto",
+                        "color": {
+                          "themeColorType": "selectionColor"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 7,
+            "y": 7,
+            "width": 5,
+            "height": 6
           }
         }
       ],
