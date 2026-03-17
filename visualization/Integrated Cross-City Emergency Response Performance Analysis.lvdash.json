@@ -93,6 +93,102 @@
         "FROM workspace.capstone_project.combined_model_ready\r\n",
         "GROUP BY city"
       ]
+    },
+    {
+      "name": "27971290",
+      "displayName": "Complete_response_time",
+      "queryLines": [
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    FLOOR(response_minutes) AS response_bin,\r\n",
+        "    COUNT(*) AS incident_count\r\n",
+        "FROM workspace.capstone_project.combined_model_ready\r\n",
+        "WHERE response_minutes BETWEEN 0 AND 60\r\n",
+        "GROUP BY city, FLOOR(response_minutes)\r\n",
+        "ORDER BY response_bin"
+      ]
+    },
+    {
+      "name": "4deb9daa",
+      "displayName": "response_delay_pct",
+      "queryLines": [
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    AVG(CASE WHEN response_minutes > 8 THEN 1 ELSE 0 END) * 100 AS response_gt_8min_pct,\r\n",
+        "    AVG(CASE WHEN response_minutes > 10 THEN 1 ELSE 0 END) * 100 AS response_gt_10min_pct,\r\n",
+        "    AVG(CASE WHEN response_minutes > 15 THEN 1 ELSE 0 END) * 100 AS response_gt_15min_pct\r\n",
+        "FROM workspace.capstone_project.combined_model_ready\r\n",
+        "GROUP BY city"
+      ]
+    },
+    {
+      "name": "6d336bea",
+      "displayName": "SLA_breach_pct",
+      "queryLines": [
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    AVG(CASE WHEN response_minutes > 5 THEN 1 ELSE 0 END) * 100 AS response_gt_5min_pct,\r\n",
+        "    AVG(CASE WHEN response_minutes > 8 THEN 1 ELSE 0 END) * 100 AS response_gt_8min_pct\r\n",
+        "FROM workspace.capstone_project.combined_model_ready\r\n",
+        "GROUP BY city"
+      ]
+    },
+    {
+      "name": "a5fa88a6",
+      "displayName": "SLA_Breach_Long_Format",
+      "queryLines": [
+        "SELECT\n",
+        "  city,\n",
+        "  '5min' AS threshold,\n",
+        "  AVG(\n",
+        "    CASE\n",
+        "      WHEN response_minutes > 5 THEN 1\n",
+        "      ELSE 0\n",
+        "    END\n",
+        "  )AS breach_pct\n",
+        "FROM\n",
+        "  workspace.capstone_project.combined_model_ready\n",
+        "GROUP BY\n",
+        "  city\n",
+        "UNION ALL\n",
+        "SELECT\n",
+        "  city,\n",
+        "  '8min' AS threshold,\n",
+        "  AVG(\n",
+        "    CASE\n",
+        "      WHEN response_minutes > 8 THEN 1\n",
+        "      ELSE 0\n",
+        "    END\n",
+        "  )AS breach_pct\n",
+        "FROM\n",
+        "  workspace.capstone_project.combined_model_ready\n",
+        "GROUP BY\n",
+        "  city"
+      ]
+    },
+    {
+      "name": "50deb195",
+      "displayName": "Threshold_Exceedance",
+      "queryLines": [
+        "SELECT city, '8 min' AS threshold,\n",
+        "       AVG(CASE WHEN response_minutes > 8 THEN 1 ELSE 0 END) AS exceed_pct\n",
+        "FROM workspace.capstone_project.combined_model_ready\n",
+        "GROUP BY city\n",
+        "\n",
+        "UNION ALL\n",
+        "\n",
+        "SELECT city, '10 min',\n",
+        "       AVG(CASE WHEN response_minutes > 10 THEN 1 ELSE 0 END)\n",
+        "FROM workspace.capstone_project.combined_model_ready\n",
+        "GROUP BY city\n",
+        "\n",
+        "UNION ALL\n",
+        "\n",
+        "SELECT city, '15 min',\n",
+        "       AVG(CASE WHEN response_minutes > 15 THEN 1 ELSE 0 END)\n",
+        "FROM workspace.capstone_project.combined_model_ready\n",
+        "GROUP BY city"
+      ]
     }
   ],
   "pages": [
@@ -193,7 +289,7 @@
             "name": "7ceb241a",
             "multilineTextboxSpec": {
               "lines": [
-                "<span style=\"text-align:center;display:block\"><span style=\"font-size: 48px;line-height: 1.5;\">**Executive Overview**</span></span>"
+                "<span style=\"text-align:center;display:block\"><span style=\"font-size: 48px;line-height: 1.5;color: #FFAB00;\">**Executive Overview**</span></span>"
               ]
             }
           },
@@ -340,16 +436,14 @@
                     "type": "categorical",
                     "mappings": [
                       {
-                        "value": "NYC",
-                        "color": {
-                          "themeColorType": "fontColor"
-                        }
-                      },
-                      {
                         "value": "Toronto",
                         "color": {
                           "themeColorType": "selectionColor"
                         }
+                      },
+                      {
+                        "value": "NYC",
+                        "color": "#D5C943"
                       }
                     ]
                   }
@@ -364,7 +458,7 @@
             "x": 0,
             "y": 4,
             "width": 4,
-            "height": 4
+            "height": 5
           }
         },
         {
@@ -463,7 +557,7 @@
           "position": {
             "x": 4,
             "y": 5,
-            "width": 6,
+            "width": 8,
             "height": 3
           }
         },
@@ -507,9 +601,9 @@
             }
           },
           "position": {
-            "x": 10,
-            "y": 5,
-            "width": 2,
+            "x": 8,
+            "y": 8,
+            "width": 4,
             "height": 1
           }
         },
@@ -553,10 +647,10 @@
             }
           },
           "position": {
-            "x": 10,
-            "y": 6,
-            "width": 2,
-            "height": 2
+            "x": 4,
+            "y": 8,
+            "width": 4,
+            "height": 1
           }
         }
       ],
@@ -569,20 +663,353 @@
       "layout": [
         {
           "widget": {
-            "name": "d618fbd1",
+            "name": "nyc-response-time-distribution",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "27971290",
+                  "fields": [
+                    {
+                      "name": "response_bin",
+                      "expression": "`response_bin`"
+                    },
+                    {
+                      "name": "sum(incident_count)",
+                      "expression": "SUM(`incident_count`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` IN ('NYC')"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "NYC Reponse Time Distribution"
+              },
+              "mark": {
+                "colors": [
+                  "#8AEFFF"
+                ]
+              },
+              "widgetType": "histogram",
+              "encodings": {
+                "x": {
+                  "fieldName": "response_bin",
+                  "scale": {
+                    "type": "quantitative",
+                    "domain": {
+                      "min": 0,
+                      "max": 30
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(incident_count)",
+                  "displayName": "Incident Count",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "toronto-response-time-distribution",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "27971290",
+                  "fields": [
+                    {
+                      "name": "response_bin",
+                      "expression": "`response_bin`"
+                    },
+                    {
+                      "name": "sum(incident_count)",
+                      "expression": "SUM(`incident_count`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` ILIKE '%toronto%'"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Toronto Response Time Distribution"
+              },
+              "mark": {
+                "colors": [
+                  "#8AEFFF"
+                ]
+              },
+              "widgetType": "histogram",
+              "encodings": {
+                "x": {
+                  "fieldName": "response_bin",
+                  "scale": {
+                    "type": "quantitative",
+                    "domain": {
+                      "min": 0,
+                      "max": 30
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(incident_count)",
+                  "displayName": "Incident Count",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 1,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "91a4bcf2",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "a5fa88a6",
+                  "fields": [
+                    {
+                      "name": "threshold",
+                      "expression": "`threshold`"
+                    },
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "breach_pct",
+                      "expression": "`breach_pct`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "SLA Breach Comparison ( >5min & >8min)",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "city",
+                  "displayName": "City",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "natural-order"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "breach_pct",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "exact",
+                      "places": 1
+                    }
+                  },
+                  "displayName": "SLA Breach (%)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "threshold",
+                  "legend": {
+                    "position": "right"
+                  },
+                  "displayName": "Threshold",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "5min",
+                        "color": "#DDDF77"
+                      },
+                      {
+                        "value": "8min",
+                        "color": "#A9581B"
+                      }
+                    ]
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 4,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "9df29aa2",
             "multilineTextboxSpec": {
               "lines": [
-                "- Response distribution histogram (Toronto vs NYC)\n",
-                "- SLA breach chart (>5, >8 minutes)\n",
-                "- Threshold exceedance chart (8 & 10 minutes)"
+                "<span style=\"text-align:center;display:block;\"><span style=\"font-size: 24px;color: #FFAB00;\">**Response Time & Tail Risk**</span></span>"
               ]
             }
           },
           "position": {
             "x": 0,
             "y": 0,
-            "width": 3,
-            "height": 2
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "b8989728",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "50deb195",
+                  "fields": [
+                    {
+                      "name": "threshold",
+                      "expression": "`threshold`"
+                    },
+                    {
+                      "name": "exceed_pct",
+                      "expression": "`exceed_pct`"
+                    },
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "facet": {
+                "type": "wrap",
+                "fieldName": "city",
+                "scale": {
+                  "type": "categorical"
+                }
+              },
+              "version": 3,
+              "frame": {
+                "title": "Extreme Delay Probability by Threshold",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "threshold",
+                  "displayName": "City",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "exceed_pct",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "exact",
+                      "places": 2
+                    }
+                  },
+                  "displayName": "Exceedance %",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "threshold",
+                  "legend": {
+                    "position": "right"
+                  },
+                  "displayName": "Threshold",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "8 min",
+                        "color": "#B1AD52"
+                      },
+                      {
+                        "value": "15 min",
+                        "color": "#C98B45"
+                      },
+                      {
+                        "value": "10 min",
+                        "color": "#AE5737"
+                      }
+                    ],
+                    "sort": {
+                      "by": "custom-order",
+                      "orderedValues": [
+                        "8 min",
+                        "10 min",
+                        "15 min"
+                      ]
+                    }
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 6,
+            "width": 8,
+            "height": 5
           }
         }
       ],
