@@ -379,6 +379,158 @@
         "SELECT *\r\n",
         "FROM area_stats"
       ]
+    },
+    {
+      "name": "c1dd234f",
+      "displayName": "nyc_composite_tail_risk",
+      "queryLines": [
+        "WITH area_stats AS (\r\n",
+        "    SELECT\r\n",
+        "        CAST(location_area AS STRING) AS area_name,\r\n",
+        "        COUNT(*) AS incident_count,\r\n",
+        "        percentile_approx(response_minutes, 0.9) AS p90_response\r\n",
+        "    FROM workspace.capstone_project.combined_model_ready\r\n",
+        "    WHERE city = 'NYC'\r\n",
+        "      AND response_minutes IS NOT NULL\r\n",
+        "      AND location_area IS NOT NULL\r\n",
+        "    GROUP BY location_area\r\n",
+        "    HAVING COUNT(*) >= 100\r\n",
+        "),\r\n",
+        "scored AS (\r\n",
+        "    SELECT\r\n",
+        "        area_name,\r\n",
+        "        incident_count,\r\n",
+        "        p90_response,\r\n",
+        "        p90_response * SQRT(incident_count) AS risk_score\r\n",
+        "    FROM area_stats\r\n",
+        "),\r\n",
+        "ranked AS (\r\n",
+        "    SELECT\r\n",
+        "        area_name,\r\n",
+        "        incident_count,\r\n",
+        "        p90_response,\r\n",
+        "        risk_score,\r\n",
+        "        ROW_NUMBER() OVER (\r\n",
+        "            ORDER BY risk_score DESC\r\n",
+        "        ) AS risk_rank\r\n",
+        "    FROM scored\r\n",
+        ")\r\n",
+        "SELECT\r\n",
+        "    area_name,\r\n",
+        "    incident_count,\r\n",
+        "    p90_response,\r\n",
+        "    risk_score,\r\n",
+        "    risk_rank\r\n",
+        "FROM ranked\r\n",
+        "WHERE risk_rank <= 10\r\n",
+        "ORDER BY risk_rank"
+      ]
+    },
+    {
+      "name": "835dd1ed",
+      "displayName": "toronto_composite_tail_risk",
+      "queryLines": [
+        "WITH mapped_areas AS (\r\n",
+        "    SELECT\r\n",
+        "        CONCAT(\r\n",
+        "            COALESCE(s.WARD_NAME, 'Zone'),\r\n",
+        "            ' (',\r\n",
+        "            CAST(m.location_area AS STRING),\r\n",
+        "            ')'\r\n",
+        "        ) AS area_name,\r\n",
+        "        m.response_minutes\r\n",
+        "    FROM workspace.capstone_project.combined_model_ready m\r\n",
+        "    LEFT JOIN workspace.capstone_project.fire_station_dataset s\r\n",
+        "        ON CAST(m.location_area AS STRING) = CAST(s.STATION AS STRING)\r\n",
+        "    WHERE m.city = 'Toronto'\r\n",
+        "      AND m.response_minutes IS NOT NULL\r\n",
+        "      AND m.location_area IS NOT NULL\r\n",
+        "),\r\n",
+        "area_stats AS (\r\n",
+        "    SELECT\r\n",
+        "        area_name,\r\n",
+        "        COUNT(*) AS incident_count,\r\n",
+        "        percentile_approx(response_minutes, 0.9) AS p90_response\r\n",
+        "    FROM mapped_areas\r\n",
+        "    GROUP BY area_name\r\n",
+        "    HAVING COUNT(*) >= 100\r\n",
+        "),\r\n",
+        "scored AS (\r\n",
+        "    SELECT\r\n",
+        "        area_name,\r\n",
+        "        incident_count,\r\n",
+        "        p90_response,\r\n",
+        "        p90_response * SQRT(incident_count) AS risk_score\r\n",
+        "    FROM area_stats\r\n",
+        "),\r\n",
+        "ranked AS (\r\n",
+        "    SELECT\r\n",
+        "        area_name,\r\n",
+        "        incident_count,\r\n",
+        "        p90_response,\r\n",
+        "        risk_score,\r\n",
+        "        ROW_NUMBER() OVER (\r\n",
+        "            ORDER BY risk_score DESC\r\n",
+        "        ) AS risk_rank\r\n",
+        "    FROM scored\r\n",
+        ")\r\n",
+        "SELECT\r\n",
+        "    area_name,\r\n",
+        "    incident_count,\r\n",
+        "    p90_response,\r\n",
+        "    risk_score,\r\n",
+        "    risk_rank\r\n",
+        "FROM ranked\r\n",
+        "WHERE risk_rank <= 10\r\n",
+        "ORDER BY risk_rank"
+      ]
+    },
+    {
+      "name": "7c309823",
+      "displayName": "top_5_call_types",
+      "queryLines": [
+        "WITH call_stats AS (\r\n",
+        "    SELECT\r\n",
+        "        city,\r\n",
+        "        unified_call_source,\r\n",
+        "        COUNT(*) AS incident_count,\r\n",
+        "        percentile_approx(response_minutes, 0.9) AS p90_response\r\n",
+        "    FROM workspace.capstone_project.combined_model_ready\r\n",
+        "    WHERE response_minutes IS NOT NULL\r\n",
+        "      AND unified_call_source IS NOT NULL\r\n",
+        "    GROUP BY city, unified_call_source\r\n",
+        "),\r\n",
+        "top_calls AS (\r\n",
+        "    SELECT\r\n",
+        "        *,\r\n",
+        "        ROW_NUMBER() OVER (\r\n",
+        "            PARTITION BY city\r\n",
+        "            ORDER BY incident_count DESC\r\n",
+        "        ) AS rank\r\n",
+        "    FROM call_stats\r\n",
+        ")\r\n",
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    unified_call_source,\r\n",
+        "    incident_count,\r\n",
+        "    p90_response\r\n",
+        "FROM top_calls\r\n",
+        "WHERE rank <= 5\r\n",
+        "ORDER BY city, rank"
+      ]
+    },
+    {
+      "name": "5949791b",
+      "displayName": "City Call Source Interaction Counts Summary",
+      "queryLines": [
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    unified_call_source,\r\n",
+        "    COUNT(*)\r\n",
+        "FROM workspace.capstone_project.combined_model_ready\r\n",
+        "GROUP BY city, unified_call_source\r\n",
+        "ORDER BY city, COUNT(*) DESC"
+      ]
     }
   ],
   "pages": [
@@ -698,10 +850,28 @@
                   },
                   {
                     "fieldName": "count(*)",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
                     "displayName": "Total Incidents"
                   },
                   {
                     "fieldName": "measure(censored_incidents)",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
                     "displayName": "Censored Incidents",
                     "style": {
                       "type": "basic",
@@ -722,7 +892,17 @@
                   },
                   {
                     "fieldName": "measure(censor_rate_percent)",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 2
+                      },
+                      "hideGroupSeparator": true
+                    },
                     "displayName": "Censor Rate (%)",
+                    "formatTemplate": "{{ @formatted }}%",
                     "style": {
                       "type": "basic",
                       "rules": [
@@ -1683,25 +1863,6 @@
       "layout": [
         {
           "widget": {
-            "name": "753e3d6e",
-            "multilineTextboxSpec": {
-              "lines": [
-                "- <span style=\"color: #919191;\">P90 response by area</span>\n",
-                "- <span style=\"color: #919191;\">Volume vs Performance scatter</span>\n",
-                "- Composite tail risk score (top areas)\n",
-                "- Operational signals (alarm level or call source) - Optional"
-              ]
-            }
-          },
-          "position": {
-            "x": 0,
-            "y": 13,
-            "width": 12,
-            "height": 2
-          }
-        },
-        {
-          "widget": {
             "name": "a2c0978f",
             "multilineTextboxSpec": {
               "lines": [
@@ -1981,6 +2142,357 @@
             "y": 7,
             "width": 6,
             "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "nyc-top-high-risk-areas-composite-tail-risk",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "c1dd234f",
+                  "fields": [
+                    {
+                      "name": "risk_rank",
+                      "expression": "`risk_rank`"
+                    },
+                    {
+                      "name": "area_name",
+                      "expression": "`area_name`"
+                    },
+                    {
+                      "name": "incident_count",
+                      "expression": "`incident_count`"
+                    },
+                    {
+                      "name": "p90_response",
+                      "expression": "`p90_response`"
+                    },
+                    {
+                      "name": "risk_score",
+                      "expression": "`risk_score`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "headerHeight": 34,
+              "freezeUpToColumnNumber": 1,
+              "frame": {
+                "showTitle": true,
+                "showDescription": true,
+                "description": "Composite Tail Risk Score = P90 Response Time × √(Incident Count)",
+                "title": "NYC Top High-Risk Areas (Composite Tail Risk)"
+              },
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "risk_rank",
+                    "contentAlignment": "center"
+                  },
+                  {
+                    "fieldName": "area_name"
+                  },
+                  {
+                    "fieldName": "incident_count",
+                    "contentAlignment": "right",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "displayName": "Incident Count"
+                  },
+                  {
+                    "fieldName": "p90_response"
+                  },
+                  {
+                    "fieldName": "risk_score",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 2
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "style": {
+                      "type": "basic"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 13,
+            "width": 8,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "toronto-top-high-risk-areas-composite-tail-risk",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "835dd1ed",
+                  "fields": [
+                    {
+                      "name": "risk_rank",
+                      "expression": "`risk_rank`"
+                    },
+                    {
+                      "name": "area_name",
+                      "expression": "`area_name`"
+                    },
+                    {
+                      "name": "incident_count",
+                      "expression": "`incident_count`"
+                    },
+                    {
+                      "name": "p90_response",
+                      "expression": "`p90_response`"
+                    },
+                    {
+                      "name": "risk_score",
+                      "expression": "`risk_score`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Toronto Top High-Risk Areas (Composite Tail Risk)"
+              },
+              "freezeUpToColumnNumber": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "risk_rank",
+                    "contentAlignment": "center"
+                  },
+                  {
+                    "fieldName": "area_name"
+                  },
+                  {
+                    "fieldName": "incident_count",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "displayName": "Incident Count"
+                  },
+                  {
+                    "fieldName": "p90_response"
+                  },
+                  {
+                    "fieldName": "risk_score",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 2
+                      },
+                      "hideGroupSeparator": false
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 18,
+            "width": 8,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "6b4a7af5",
+            "multilineTextboxSpec": {
+              "lines": [
+                "The composite tail risk table identifies priority areas where high demand and elevated response times coincide. These areas represent the most critical targets for operational improvement within each city.\n",
+                "\n",
+                "High delay × High volume = High operational risk.  Therefore, it was calculated as:\n",
+                "\n",
+                "***Composite Tail Risk Score = P90 Response Time × √(Incident Count)***\n",
+                "\n",
+                "The square root is used to reduce the dominance of very high-volume areas while still accounting for demand."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 23,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "nyc-top-5-p90-response-time-call-type",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "7c309823",
+                  "fields": [
+                    {
+                      "name": "p90_response",
+                      "expression": "`p90_response`"
+                    },
+                    {
+                      "name": "unified_call_source",
+                      "expression": "`unified_call_source`"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` IN ('NYC')"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "NYC P90 Response Time by Call Type"
+              },
+              "mark": {
+                "colors": [
+                  "#D5C943"
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "p90_response",
+                  "displayName": "Response Time (min)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "unified_call_source",
+                  "displayName": "Call Type",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 13,
+            "width": 4,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "toronto-p90-response-time-call-type",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "7c309823",
+                  "fields": [
+                    {
+                      "name": "p90_response",
+                      "expression": "`p90_response`"
+                    },
+                    {
+                      "name": "unified_call_source",
+                      "expression": "`unified_call_source`"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` IN ('Toronto')"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Toronto P90 Response Time by Call Type"
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "selectionColor"
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "p90_response",
+                  "displayName": "Response Time (min)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "unified_call_source",
+                  "displayName": "Call Type",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 18,
+            "width": 4,
+            "height": 5
           }
         }
       ],
