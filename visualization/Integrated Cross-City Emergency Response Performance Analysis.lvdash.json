@@ -26,10 +26,11 @@
       "displayName": "Model Performance Table",
       "queryLines": [
         "SELECT \n",
-        "  Model,\n",
+        "  Model_Name,\n",
         "  COALESCE(CAST(Accuracy AS STRING), '-') AS Accuracy,\n",
+        "  COALESCE(CAST(F1_Score AS STRING), '-') AS F1_Score,\n",
         "  COALESCE(CAST(AUC_ROC AS STRING), '-') AS AUC_ROC,\n",
-        "  Type\n",
+        "  City\n",
         "FROM capstone_project.dashboard_metrics"
       ]
     },
@@ -40,7 +41,7 @@
         "SELECT \n",
         "  CASE WHEN delay_risk_probability >= 0.14 THEN 'Predicted: High Risk' \n",
         "       ELSE 'Predicted: Low Risk' END AS Predicted, 'Actual: On-Time' AS Actual, COUNT(*) AS Total_Incidents\n",
-        "FROM capstone_project.dashboard_predictions_nyc\n",
+        "FROM capstone_project.dashboard_predictions_all\n",
         "GROUP BY 1, 2\n",
         "ORDER BY 1, 2"
       ]
@@ -59,7 +60,7 @@
       "displayName": "Risk Distribution Histogram",
       "queryLines": [
         "SELECT delay_risk_probability \n",
-        "FROM capstone_project.dashboard_predictions_nyc"
+        "FROM capstone_project.dashboard_predictions_all"
       ]
     }
   ],
@@ -257,14 +258,14 @@
               "version": 3,
               "frame": {
                 "showDescription": true,
-                "description": "Strategic Insight: Emergency response delay risk is highly predictable using incident-level characteristics. Our classifier successfully identifies 84% of true delays before units are dispatched, allowing for proactive resource re-allocation and risk mitigation for \"tail-risk\" incidents."
+                "description": ""
               },
               "widgetType": "bar",
               "encodings": {
                 "x": {
                   "fieldName": "Predicted",
                   "axis": {
-                    "title": "Model Prediction (NYC Classifier)"
+                    "title": "Model Prediction Classifier"
                   },
                   "scale": {
                     "type": "categorical"
@@ -309,20 +310,24 @@
                   "datasetName": "1c62f149",
                   "fields": [
                     {
-                      "name": "AUC_ROC",
-                      "expression": "`AUC_ROC`"
-                    },
-                    {
                       "name": "Accuracy",
                       "expression": "`Accuracy`"
                     },
                     {
-                      "name": "Model",
-                      "expression": "`Model`"
+                      "name": "F1_Score",
+                      "expression": "`F1_Score`"
                     },
                     {
-                      "name": "Type",
-                      "expression": "`Type`"
+                      "name": "AUC_ROC",
+                      "expression": "`AUC_ROC`"
+                    },
+                    {
+                      "name": "Model_Name",
+                      "expression": "`Model_Name`"
+                    },
+                    {
+                      "name": "City",
+                      "expression": "`City`"
                     }
                   ],
                   "disaggregated": true
@@ -335,16 +340,19 @@
               "encodings": {
                 "columns": [
                   {
-                    "fieldName": "AUC_ROC"
-                  },
-                  {
                     "fieldName": "Accuracy"
                   },
                   {
-                    "fieldName": "Model"
+                    "fieldName": "F1_Score"
                   },
                   {
-                    "fieldName": "Type"
+                    "fieldName": "AUC_ROC"
+                  },
+                  {
+                    "fieldName": "Model_Name"
+                  },
+                  {
+                    "fieldName": "City"
                   }
                 ]
               }
@@ -447,7 +455,7 @@
                 "title": "Top Features by Hazard Ratio",
                 "showTitle": true,
                 "showDescription": true,
-                "description": "Summary: Our predictive framework demonstrates that emergency delays in NYC are not random. By identifying 84% of true delays through incident characteristics, and quantifying risk drivers like Time of Day and Call Volume through Hazard Ratios, we provide a dual-layered approach to mitigating \"tail-risk\" in urban emergency response."
+                "description": ""
               },
               "widgetType": "histogram",
               "encodings": {
