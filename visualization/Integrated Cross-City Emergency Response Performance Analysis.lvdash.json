@@ -5,20 +5,108 @@
       "displayName": "nyc_model_ready",
       "queryLines": [
         "SELECT * FROM workspace.capstone_project.nyc_model_ready"
-      ]
+      ],
+      "catalog": "workspace",
+      "schema": "default"
     },
     {
       "name": "25a85096",
       "displayName": "toronto_model_ready",
       "queryLines": [
         "SELECT * FROM workspace.capstone_project.toronto_model_ready"
-      ]
+      ],
+      "catalog": "workspace",
+      "schema": "default"
     },
     {
       "name": "ac05473d",
       "displayName": "combined_model_ready",
       "queryLines": [
         "SELECT * FROM workspace.capstone_project.combined_model_ready"
+      ],
+      "catalog": "workspace",
+      "schema": "default"
+    },
+    {
+      "name": "c1ae11fc",
+      "displayName": "predictive_model_performance",
+      "queryLines": [
+        "SELECT 'Toronto' AS city, 'Naive Majority' AS model, 0.500000 AS auc_roc, 0.080000 AS pr_auc, 0.920000 AS precision, 1.000000 AS recall, 0.958000 AS f1\n",
+        "UNION ALL\n",
+        "SELECT 'Toronto', 'Logistic Regression', 0.718080, 0.192091, 0.876812, 0.919868, 0.881989\n",
+        "UNION ALL\n",
+        "SELECT 'Toronto', 'Random Forest', 0.660683, 0.152929, 0.846395, 0.919997, 0.881662\n",
+        "UNION ALL\n",
+        "SELECT 'Toronto', 'GBTClassifier', 0.699627, 0.187716, 0.876855, 0.919897, 0.881920\n",
+        "UNION ALL\n",
+        "SELECT 'NYC', 'Naive Majority', 0.500000, 0.140000, 0.859000, 1.000000, 0.924000\n",
+        "UNION ALL\n",
+        "SELECT 'NYC', 'Logistic Regression', 0.668543, 0.224213, 0.794398, 0.859078, 0.793985\n",
+        "UNION ALL\n",
+        "SELECT 'NYC', 'Random Forest', 0.574290, 0.233351, 0.738025, 0.859084, 0.793966\n",
+        "UNION ALL\n",
+        "SELECT 'NYC', 'GBTClassifier', 0.682191, 0.248935, 0.834946, 0.859117, 0.794099"
+      ]
+    },
+    {
+      "name": "a1a442ca",
+      "displayName": "cross_city_transfer_results",
+      "queryLines": [
+        "SELECT 'Toronto' AS train_city, 'NYC' AS test_city, 'Logistic Regression' AS model, 0.500136 AS auc_roc, 0.147421 AS pr_auc, 0.141321 AS accuracy, 0.034998 AS f1\n",
+        "UNION ALL\n",
+        "SELECT 'Toronto', 'NYC', 'Random Forest', 0.532385, 0.161067, 0.252564, 0.257152\n",
+        "UNION ALL\n",
+        "SELECT 'NYC', 'Toronto', 'Logistic Regression', 0.522436, 0.086802, 0.124960, 0.103042\n",
+        "UNION ALL\n",
+        "SELECT 'NYC', 'Toronto', 'Random Forest', 0.516483, 0.081295, 0.392726, 0.497207"
+      ]
+    },
+    {
+      "name": "25e99333",
+      "displayName": "cross_city_feature_imp_query",
+      "queryLines": [
+        "SELECT \n",
+        "  feature,\n",
+        "  toronto_mean_abs_shap AS mean_shap,\n",
+        "  'Toronto' AS city\n",
+        "FROM cross_city_shap\n",
+        "\n",
+        "UNION ALL\n",
+        "\n",
+        "SELECT \n",
+        "  feature,\n",
+        "  nyc_mean_abs_shap AS mean_shap,\n",
+        "  'NYC' AS city\n",
+        "FROM cross_city_shap"
+      ],
+      "catalog": "workspace",
+      "schema": "default"
+    },
+    {
+      "name": "84f5c702",
+      "displayName": "cross_city_shap",
+      "queryLines": [
+        "SELECT * FROM workspace.default.cross_city_shap"
+      ],
+      "catalog": "workspace",
+      "schema": "default"
+    },
+    {
+      "name": "bb0831ef",
+      "displayName": "cross_city_dependency_dataset",
+      "queryLines": [
+        "SELECT * FROM workspace.default.cross_city_dependency_dataset"
+      ]
+    },
+    {
+      "name": "84f96b79",
+      "displayName": "cross_city_dependency_hour_query",
+      "queryLines": [
+        "SELECT \n",
+        "   city,\n",
+        "  feature_value AS hour,\n",
+        "  shap_value\n",
+        "FROM cross_city_dependency_dataset"
       ]
     }
   ],
@@ -185,6 +273,93 @@
             "width": 12,
             "height": 2
           }
+        },
+        {
+          "widget": {
+            "name": "f65a7f82",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "c1ae11fc",
+                  "fields": [
+                    {
+                      "name": "model",
+                      "expression": "`model`"
+                    },
+                    {
+                      "name": "sum(auc_roc)",
+                      "expression": "SUM(`auc_roc`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` IN ('Toronto')"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "mark": {
+                "layout": "stack"
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "model",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "primary": {
+                    "fields": [
+                      {
+                        "fieldName": "sum(auc_roc)"
+                      }
+                    ],
+                    "scale": {
+                      "type": "quantitative"
+                    }
+                  },
+                  "secondary": {
+                    "fields": [],
+                    "scale": {
+                      "type": "quantitative"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 1,
+            "y": 3,
+            "width": 11,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "c01d8b6d",
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-single-select",
+              "encodings": {},
+              "frame": {
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 7,
+            "y": 2,
+            "width": 4,
+            "height": 1
+          }
         }
       ],
       "pageType": "PAGE_TYPE_CANVAS",
@@ -199,10 +374,7 @@
             "name": "baba9ebe",
             "multilineTextboxSpec": {
               "lines": [
-                "- SHAP global importance (summary bar plot)\n",
-                "- SHAP summary (beeswarm)\n",
-                "- 1 dependency plot\n",
-                "- Interpretation text box"
+                "<span style=\"text-align:center;display:block;\"><span style=\"font-size: 24px;\">**Shapley Explainability**</span></span>"
               ]
             }
           },
@@ -210,7 +382,406 @@
             "x": 0,
             "y": 0,
             "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "shap-feature-importance",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "25e99333",
+                  "fields": [
+                    {
+                      "name": "avg(mean_shap)",
+                      "expression": "AVG(`mean_shap`)"
+                    },
+                    {
+                      "name": "feature",
+                      "expression": "`feature`"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` IN ('NYC')"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "SHAP Feature Importance -  NYC"
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "avg(mean_shap)",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  },
+                  "axis": {
+                    "hideGrid": false,
+                    "hideLabels": false
+                  },
+                  "displayName": "Avg Mean Shap",
+                  "scale": {
+                    "type": "quantitative",
+                    "reverse": false
+                  }
+                },
+                "y": {
+                  "fieldName": "feature",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  }
+                },
+                "label": {
+                  "show": false
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "shap-feature-importance-nyc-1",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "25e99333",
+                  "fields": [
+                    {
+                      "name": "avg(mean_shap)",
+                      "expression": "AVG(`mean_shap`)"
+                    },
+                    {
+                      "name": "feature",
+                      "expression": "`feature`"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` IN ('Toronto')"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "SHAP Feature Importance -  Toronto"
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "avg(mean_shap)",
+                  "displayName": "Avg Mean Shap",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "feature",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  }
+                },
+                "label": {
+                  "show": false
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 1,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "5c0f3d8b",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "84f96b79",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "hour",
+                      "expression": "`hour`"
+                    },
+                    {
+                      "name": "sum(shap_value)",
+                      "expression": "SUM(`shap_value`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "SHAP Hour Dependency Plot",
+                "showTitle": true
+              },
+              "widgetType": "scatter",
+              "encodings": {
+                "x": {
+                  "fieldName": "hour",
+                  "displayName": "Hour",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(shap_value)",
+                  "displayName": "SHAP Value",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "city",
+                  "legend": {
+                    "position": "bottom"
+                  },
+                  "displayName": "City",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "Toronto",
+                        "color": {
+                          "themeColorType": "visualizationColors",
+                          "position": 3
+                        }
+                      },
+                      {
+                        "value": "NYC",
+                        "color": {
+                          "themeColorType": "visualizationColors",
+                          "position": 2
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 9,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "cde9927f",
+            "multilineTextboxSpec": {
+              "lines": [
+                "### <span style=\"text-align:center;display:block;\">SHAP Feature Importance</span>\n",
+                "\n",
+                "<span style=\"font-size:18px\">Toronto delay risk is primarily driven by spatial factors, while NYC is more influenced by incident type. Temporal and demand variables are important in both cities, though their impact varies. This highlights that delay risk is multi-dimensional and differs structurally across cities.</span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 7,
+            "width": 12,
             "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "3da89b05",
+            "multilineTextboxSpec": {
+              "lines": [
+                "### <span style=\"text-align:center;display:block;\">Temporal Driver - Hour</span>\n",
+                "\n",
+                "<span style=\"text-align:justify;display:block\"><span style=\"font-size:18px\">Delay risk increases during peak hours, as shown by higher SHAP values, indicating congestion-driven effects. This pattern is consistent across both cities, though the strength of impact varies, reflecting city-specific operational dynamics.</span></span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 15,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "55704b34",
+            "multilineTextboxSpec": {
+              "lines": [
+                "### <span style=\"text-align:center;display:block\">SHAP Summary Plot (Beeswarm)</span>\n",
+                "\n",
+                "<span style=\"text-align:justify;display:block;\"><span style=\"font-size: 18px;\">Toronto’s delay risk is predominantly driven by spatial and temporal factors, with location\\_area and hour showing the widest SHAP spread, indicating strong variability across regions and time-of-day conditions.In contrast, NYC exhibits a more incident-driven structure, where incident\\_category dominates, while demand and temporal features contribute consistently but with comparatively lower magnitude than Toronto’s spatial effects.</span></span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 23,
+            "width": 12,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "64d8d7bc",
+            "multilineTextboxSpec": {
+              "lines": [
+                ""
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 17,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "cc4a7c52",
+            "multilineTextboxSpec": {
+              "lines": [
+                ""
+              ]
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 17,
+            "width": 6,
+            "height": 6
           }
         }
       ],
@@ -304,11 +875,28 @@
       ],
       "pageType": "PAGE_TYPE_CANVAS",
       "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "c385b683",
+      "displayName": "Global Filters",
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "6f5d0490",
+      "displayName": "Untitled page",
+      "pageType": "PAGE_TYPE_CANVAS"
     }
   ],
   "uiSettings": {
     "theme": {
-      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+      "canvasBackgroundColor": {},
+      "widgetBackgroundColor": {},
+      "widgetBorderColor": {},
+      "fontColor": {},
+      "selectionColor": {},
+      "widgetHeaderAlignment": "CENTER",
+      "fontFamily": "Arial"
     },
     "applyModeEnabled": false
   }
