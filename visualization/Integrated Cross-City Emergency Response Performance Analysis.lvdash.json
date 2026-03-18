@@ -35,7 +35,7 @@
         "  feature,\n",
         "  toronto_mean_abs_shap AS mean_shap,\n",
         "  'Toronto' AS city\n",
-        "FROM cross_city_shap\n",
+        "FROM workspace.capstone_project.cross_city_shap\n",
         "\n",
         "UNION ALL\n",
         "\n",
@@ -43,26 +43,10 @@
         "  feature,\n",
         "  nyc_mean_abs_shap AS mean_shap,\n",
         "  'NYC' AS city\n",
-        "FROM cross_city_shap"
+        "FROM workspace.capstone_project.cross_city_shap"
       ],
       "catalog": "workspace",
-      "schema": "default"
-    },
-    {
-      "name": "84f5c702",
-      "displayName": "cross_city_shap",
-      "queryLines": [
-        "SELECT * FROM workspace.default.cross_city_shap"
-      ],
-      "catalog": "workspace",
-      "schema": "default"
-    },
-    {
-      "name": "bb0831ef",
-      "displayName": "cross_city_dependency_dataset",
-      "queryLines": [
-        "SELECT * FROM workspace.default.cross_city_dependency_dataset"
-      ]
+      "schema": "capstone_project"
     },
     {
       "name": "84f96b79",
@@ -72,7 +56,21 @@
         "   city,\n",
         "  feature_value AS hour,\n",
         "  shap_value\n",
-        "FROM cross_city_dependency_dataset"
+        "FROM workspace.capstone_project.cross_city_dependency"
+      ]
+    },
+    {
+      "name": "82b0fb4d",
+      "displayName": "cross_city_shap",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.cross_city_shap"
+      ]
+    },
+    {
+      "name": "8291e7ff",
+      "displayName": "cross_city_dependency",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.cross_city_dependency"
       ]
     }
   ],
@@ -758,8 +756,7 @@
     {
       "name": "c385b683",
       "displayName": "Global Filters",
-      "pageType": "PAGE_TYPE_GLOBAL_FILTERS",
-      "layoutVersion": "GRID_V1"
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS"
     },
     {
       "name": "6f5d0490",
@@ -769,11 +766,6 @@
   ],
   "uiSettings": {
     "theme": {
-      "canvasBackgroundColor": {},
-      "widgetBackgroundColor": {},
-      "widgetBorderColor": {},
-      "fontColor": {},
-      "selectionColor": {},
       "widgetHeaderAlignment": "CENTER",
       "fontFamily": "Arial"
     },
