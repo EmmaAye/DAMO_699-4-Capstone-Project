@@ -28,40 +28,6 @@
       "schema": "default"
     },
     {
-      "name": "c1ae11fc",
-      "displayName": "predictive_model_performance",
-      "queryLines": [
-        "SELECT 'Toronto' AS city, 'Naive Majority' AS model, 0.500000 AS auc_roc, 0.080000 AS pr_auc, 0.920000 AS precision, 1.000000 AS recall, 0.958000 AS f1\n",
-        "UNION ALL\n",
-        "SELECT 'Toronto', 'Logistic Regression', 0.718080, 0.192091, 0.876812, 0.919868, 0.881989\n",
-        "UNION ALL\n",
-        "SELECT 'Toronto', 'Random Forest', 0.660683, 0.152929, 0.846395, 0.919997, 0.881662\n",
-        "UNION ALL\n",
-        "SELECT 'Toronto', 'GBTClassifier', 0.699627, 0.187716, 0.876855, 0.919897, 0.881920\n",
-        "UNION ALL\n",
-        "SELECT 'NYC', 'Naive Majority', 0.500000, 0.140000, 0.859000, 1.000000, 0.924000\n",
-        "UNION ALL\n",
-        "SELECT 'NYC', 'Logistic Regression', 0.668543, 0.224213, 0.794398, 0.859078, 0.793985\n",
-        "UNION ALL\n",
-        "SELECT 'NYC', 'Random Forest', 0.574290, 0.233351, 0.738025, 0.859084, 0.793966\n",
-        "UNION ALL\n",
-        "SELECT 'NYC', 'GBTClassifier', 0.682191, 0.248935, 0.834946, 0.859117, 0.794099"
-      ]
-    },
-    {
-      "name": "a1a442ca",
-      "displayName": "cross_city_transfer_results",
-      "queryLines": [
-        "SELECT 'Toronto' AS train_city, 'NYC' AS test_city, 'Logistic Regression' AS model, 0.500136 AS auc_roc, 0.147421 AS pr_auc, 0.141321 AS accuracy, 0.034998 AS f1\n",
-        "UNION ALL\n",
-        "SELECT 'Toronto', 'NYC', 'Random Forest', 0.532385, 0.161067, 0.252564, 0.257152\n",
-        "UNION ALL\n",
-        "SELECT 'NYC', 'Toronto', 'Logistic Regression', 0.522436, 0.086802, 0.124960, 0.103042\n",
-        "UNION ALL\n",
-        "SELECT 'NYC', 'Toronto', 'Random Forest', 0.516483, 0.081295, 0.392726, 0.497207"
-      ]
-    },
-    {
       "name": "25e99333",
       "displayName": "cross_city_feature_imp_query",
       "queryLines": [
@@ -272,93 +238,6 @@
             "y": 0,
             "width": 12,
             "height": 2
-          }
-        },
-        {
-          "widget": {
-            "name": "f65a7f82",
-            "queries": [
-              {
-                "name": "main_query",
-                "query": {
-                  "datasetName": "c1ae11fc",
-                  "fields": [
-                    {
-                      "name": "model",
-                      "expression": "`model`"
-                    },
-                    {
-                      "name": "sum(auc_roc)",
-                      "expression": "SUM(`auc_roc`)"
-                    }
-                  ],
-                  "filters": [
-                    {
-                      "expression": "`city` IN ('Toronto')"
-                    }
-                  ],
-                  "disaggregated": false
-                }
-              }
-            ],
-            "spec": {
-              "version": 3,
-              "mark": {
-                "layout": "stack"
-              },
-              "widgetType": "bar",
-              "encodings": {
-                "x": {
-                  "fieldName": "model",
-                  "scale": {
-                    "type": "categorical"
-                  }
-                },
-                "y": {
-                  "primary": {
-                    "fields": [
-                      {
-                        "fieldName": "sum(auc_roc)"
-                      }
-                    ],
-                    "scale": {
-                      "type": "quantitative"
-                    }
-                  },
-                  "secondary": {
-                    "fields": [],
-                    "scale": {
-                      "type": "quantitative"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "position": {
-            "x": 1,
-            "y": 3,
-            "width": 11,
-            "height": 6
-          }
-        },
-        {
-          "widget": {
-            "name": "c01d8b6d",
-            "spec": {
-              "version": 2,
-              "widgetType": "filter-single-select",
-              "encodings": {},
-              "frame": {
-                "showTitle": true
-              }
-            }
-          },
-          "position": {
-            "x": 7,
-            "y": 2,
-            "width": 4,
-            "height": 1
           }
         }
       ],
@@ -747,7 +626,7 @@
           },
           "position": {
             "x": 0,
-            "y": 23,
+            "y": 24,
             "width": 12,
             "height": 3
           }
@@ -757,7 +636,7 @@
             "name": "64d8d7bc",
             "multilineTextboxSpec": {
               "lines": [
-                ""
+                "![](https://github.com/EmmaAye/DAMO_699-4-Capstone-Project/blob/main/output/shap/toronto/toronto_shap_summary_pretty_top15.png?raw=true)<p style=\"text-align:center;font-weight:bold;\">Toronto — SHAP Summary (Top 15 drivers)</p>"
               ]
             }
           },
@@ -765,7 +644,7 @@
             "x": 0,
             "y": 17,
             "width": 6,
-            "height": 6
+            "height": 7
           }
         },
         {
@@ -773,7 +652,7 @@
             "name": "cc4a7c52",
             "multilineTextboxSpec": {
               "lines": [
-                ""
+                "![](https://github.com/EmmaAye/DAMO_699-4-Capstone-Project/blob/main/output/shap/nyc/nyc_shap_summary_pretty_top15.png?raw=true)"
               ]
             }
           },
@@ -781,7 +660,7 @@
             "x": 6,
             "y": 17,
             "width": 6,
-            "height": 6
+            "height": 7
           }
         }
       ],
