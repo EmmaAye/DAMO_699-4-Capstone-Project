@@ -292,22 +292,35 @@
       "name": "1664eecd",
       "displayName": "p90_response_by_area",
       "queryLines": [
-        "WITH area_p90 AS (\r\n",
+        "WITH mapped_areas AS (\r\n",
+        "    SELECT\r\n",
+        "        m.city,\r\n",
+        "        CASE\r\n",
+        "            WHEN m.city = 'Toronto' THEN COALESCE(s.WARD_NAME, CONCAT('Zone ', CAST(m.location_area AS STRING)))\r\n",
+        "            ELSE CAST(m.location_area AS STRING)\r\n",
+        "        END AS area_name,\r\n",
+        "        m.response_minutes\r\n",
+        "    FROM workspace.capstone_project.combined_model_ready m\r\n",
+        "    LEFT JOIN workspace.capstone_project.fire_station_dataset s\r\n",
+        "        ON m.city = 'Toronto'\r\n",
+        "       AND CAST(m.location_area AS STRING) = CAST(s.STATION AS STRING)\r\n",
+        "    WHERE m.response_minutes IS NOT NULL\r\n",
+        "      AND m.location_area IS NOT NULL\r\n",
+        "),\r\n",
+        "area_p90 AS (\r\n",
         "    SELECT\r\n",
         "        city,\r\n",
-        "        location_area,\r\n",
+        "        area_name,\r\n",
         "        percentile_approx(response_minutes, 0.9) AS p90_response,\r\n",
         "        COUNT(*) AS incident_count\r\n",
-        "    FROM workspace.capstone_project.combined_model_ready\r\n",
-        "    WHERE response_minutes IS NOT NULL\r\n",
-        "      AND location_area IS NOT NULL\r\n",
-        "    GROUP BY city, location_area\r\n",
+        "    FROM mapped_areas\r\n",
+        "    GROUP BY city, area_name\r\n",
         "    HAVING COUNT(*) >= 100\r\n",
         "),\r\n",
         "ranked AS (\r\n",
         "    SELECT\r\n",
         "        city,\r\n",
-        "        location_area,\r\n",
+        "        area_name,\r\n",
         "        p90_response,\r\n",
         "        incident_count,\r\n",
         "        ROW_NUMBER() OVER (\r\n",
@@ -318,13 +331,53 @@
         ")\r\n",
         "SELECT\r\n",
         "    city,\r\n",
-        "    location_area,\r\n",
+        "    area_name,\r\n",
         "    p90_response,\r\n",
         "    incident_count,\r\n",
         "    p90_rank\r\n",
         "FROM ranked\r\n",
         "WHERE p90_rank <= 10\r\n",
         "ORDER BY city, p90_rank"
+      ]
+    },
+    {
+      "name": "be1e1ab1",
+      "displayName": "fire_station_dataset",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.fire_station_dataset"
+      ]
+    },
+    {
+      "name": "c5690916",
+      "displayName": "volumne_vs_performance_by_area",
+      "queryLines": [
+        "WITH mapped_areas AS (\r\n",
+        "    SELECT\r\n",
+        "        m.city,\r\n",
+        "        CASE\r\n",
+        "            WHEN m.city = 'Toronto' THEN COALESCE(s.WARD_NAME, CONCAT('Zone ', CAST(m.location_area AS STRING)))\r\n",
+        "            ELSE CAST(m.location_area AS STRING)\r\n",
+        "        END AS area_name,\r\n",
+        "        m.response_minutes\r\n",
+        "    FROM workspace.capstone_project.combined_model_ready m\r\n",
+        "    LEFT JOIN workspace.capstone_project.fire_station_dataset s\r\n",
+        "        ON m.city = 'Toronto'\r\n",
+        "       AND CAST(m.location_area AS STRING) = CAST(s.STATION AS STRING)\r\n",
+        "    WHERE m.response_minutes IS NOT NULL\r\n",
+        "),\r\n",
+        "area_stats AS (\r\n",
+        "    SELECT\r\n",
+        "        city,\r\n",
+        "        area_name,\r\n",
+        "        COUNT(*) AS incident_count,\r\n",
+        "        AVG(response_minutes) AS avg_response,\r\n",
+        "        percentile_approx(response_minutes, 0.9) AS p90_response\r\n",
+        "    FROM mapped_areas\r\n",
+        "    GROUP BY city, area_name\r\n",
+        "    HAVING COUNT(*) >= 100\r\n",
+        ")\r\n",
+        "SELECT *\r\n",
+        "FROM area_stats"
       ]
     }
   ],
@@ -1633,8 +1686,8 @@
             "name": "753e3d6e",
             "multilineTextboxSpec": {
               "lines": [
-                "- P90 response by area\n",
-                "- Volume vs Performance scatter\n",
+                "- <span style=\"color: #919191;\">P90 response by area</span>\n",
+                "- <span style=\"color: #919191;\">Volume vs Performance scatter</span>\n",
                 "- Composite tail risk score (top areas)\n",
                 "- Operational signals (alarm level or call source) - Optional"
               ]
@@ -1642,7 +1695,7 @@
           },
           "position": {
             "x": 0,
-            "y": 7,
+            "y": 13,
             "width": 12,
             "height": 2
           }
@@ -1681,8 +1734,8 @@
                       "expression": "`p90_response`"
                     },
                     {
-                      "name": "location_area",
-                      "expression": "`location_area`"
+                      "name": "area_name",
+                      "expression": "`area_name`"
                     }
                   ],
                   "disaggregated": true
@@ -1710,14 +1763,14 @@
               "encodings": {
                 "x": {
                   "fieldName": "p90_response",
-                  "displayName": "response time",
+                  "displayName": "Response Time (min)",
                   "scale": {
                     "type": "quantitative"
                   }
                 },
                 "y": {
-                  "fieldName": "location_area",
-                  "displayName": "location area",
+                  "fieldName": "area_name",
+                  "displayName": "Location Area",
                   "scale": {
                     "type": "categorical",
                     "sort": {
@@ -1752,7 +1805,181 @@
           "position": {
             "x": 0,
             "y": 1,
-            "width": 8,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "nyc-volume-vs",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "c5690916",
+                  "fields": [
+                    {
+                      "name": "area_name",
+                      "expression": "`area_name`"
+                    },
+                    {
+                      "name": "incident_count",
+                      "expression": "`incident_count`"
+                    },
+                    {
+                      "name": "p90_response",
+                      "expression": "`p90_response`"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` IN ('NYC')"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "NYC Volumne Vs Delay Risk for P90 Response Time"
+              },
+              "mark": {
+                "colors": [
+                  "#DDD715"
+                ],
+                "size": -1.3
+              },
+              "widgetType": "scatter",
+              "encodings": {
+                "x": {
+                  "fieldName": "incident_count",
+                  "displayName": "Incident Volumne (Count)",
+                  "scale": {
+                    "type": "quantitative",
+                    "domain": {
+                      "min": 10000
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "p90_response",
+                  "displayName": "Response Time (min)",
+                  "scale": {
+                    "type": "quantitative",
+                    "domain": {
+                      "min": 7
+                    }
+                  }
+                },
+                "size": {
+                  "fieldName": "incident_count",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "extra": [
+                  {
+                    "fieldName": "area_name"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 7,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "toronto-volume-vs-performance-p90-response-time",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "c5690916",
+                  "fields": [
+                    {
+                      "name": "area_name",
+                      "expression": "`area_name`"
+                    },
+                    {
+                      "name": "incident_count",
+                      "expression": "`incident_count`"
+                    },
+                    {
+                      "name": "p90_response",
+                      "expression": "`p90_response`"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` IN ('Toronto')"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Toronto Volumne Vs Delay Risk for P90 Response Time"
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "selectionColor"
+                  }
+                ],
+                "size": -1.4
+              },
+              "widgetType": "scatter",
+              "encodings": {
+                "x": {
+                  "fieldName": "incident_count",
+                  "displayName": "Incident Volume (Count)",
+                  "scale": {
+                    "type": "quantitative",
+                    "domain": {
+                      "max": 45000
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "p90_response",
+                  "displayName": "Response TIme (min)",
+                  "scale": {
+                    "type": "quantitative",
+                    "domain": {
+                      "min": 6
+                    }
+                  }
+                },
+                "size": {
+                  "fieldName": "incident_count",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "extra": [
+                  {
+                    "fieldName": "area_name"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 7,
+            "width": 6,
             "height": 6
           }
         }
