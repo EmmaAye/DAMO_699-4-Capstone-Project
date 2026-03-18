@@ -51,6 +51,20 @@
       ],
       "catalog": "workspace",
       "schema": "default"
+    },
+    {
+      "name": "4f8dec90",
+      "displayName": "city_hazard_ratios",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.city_hazard_ratios"
+      ]
+    },
+    {
+      "name": "cbbaab86",
+      "displayName": "logrank_summary_within_city",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.logrank_summary_within_city"
+      ]
     }
   ],
   "pages": [
@@ -276,12 +290,9 @@
             "name": "455f4146",
             "multilineTextboxSpec": {
               "lines": [
-                "<span style=\"font-size: 14px;\">**Kaplan-Meier Survival Curves: Toronto vs. NYC Response Times**</span>\n",
                 "\n",
-                "![final_km_overlay_toronto_vs_nyc.png](https://dbc-376dec61-d68c.cloud.databricks.com/ajax-api/2.0/workspace-files/Shared/DAMO_699-4-Capstone-Project/output/graphs/final_km_overlay_toronto_vs_nyc.png?o=479305206346181)\n",
-                "<p>&nbsp;</p>\n",
-                "\n",
-                "<p>&nbsp;</p>\n"
+                "%md\n",
+                "<img src=\"https://github.com/EmmaAye/DAMO_699-4-Capstone-Project/blob/main/output/graphs/km_baseline_toronto_vs_nyc.png?raw=true\" style=\"max-width:100%; height:auto;\">"
               ]
             }
           },
@@ -289,7 +300,7 @@
             "x": 0,
             "y": 2,
             "width": 12,
-            "height": 11
+            "height": 13
           }
         },
         {
@@ -299,7 +310,7 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "b517c9b7",
+                  "datasetName": "4f8dec90",
                   "fields": [
                     {
                       "name": "city",
@@ -312,11 +323,6 @@
                     {
                       "name": "interpretation",
                       "expression": "`interpretation`"
-                    }
-                  ],
-                  "filters": [
-                    {
-                      "expression": "`city` IN (`city`) OR TRUE"
                     }
                   ],
                   "disaggregated": true
@@ -358,7 +364,7 @@
           },
           "position": {
             "x": 0,
-            "y": 13,
+            "y": 15,
             "width": 8,
             "height": 6
           }
@@ -376,7 +382,7 @@
           },
           "position": {
             "x": 8,
-            "y": 14,
+            "y": 15,
             "width": 4,
             "height": 4
           }
@@ -388,7 +394,7 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "cd40467b",
+                  "datasetName": "cbbaab86",
                   "fields": [
                     {
                       "name": "city",
@@ -441,7 +447,7 @@
           },
           "position": {
             "x": 0,
-            "y": 19,
+            "y": 21,
             "width": 11,
             "height": 5
           }
