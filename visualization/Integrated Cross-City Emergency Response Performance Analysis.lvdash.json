@@ -20,6 +20,37 @@
       "queryLines": [
         "SELECT * FROM workspace.capstone_project.combined_model_ready"
       ]
+    },
+    {
+      "name": "b517c9b7",
+      "displayName": "city hazard ratios with confidence interval margins",
+      "queryLines": [
+        "SELECT \r\n",
+        "    city,\r\n",
+        "    interpretation,\r\n",
+        "    hr,\r\n",
+        "    ci_lower,\r\n",
+        "    ci_upper,\r\n",
+        "    -- Calculate the distance from the HR to the upper bound\r\n",
+        "    (ci_upper - hr) AS error_margin\r\n",
+        "FROM workspace.default.demand_hr_table_toronto_nyc"
+      ]
+    },
+    {
+      "name": "cd40467b",
+      "displayName": "Logrank Summary Within City",
+      "queryLines": [
+        "SELECT \r\n",
+        "  city, \r\n",
+        "  stratification, \r\n",
+        "  ROUND(p_value, 4) AS p_value, \r\n",
+        "  significant, \r\n",
+        "  higher_risk_group_tail \r\n",
+        "FROM \r\n",
+        "  workspace.default.logrank_summary"
+      ],
+      "catalog": "workspace",
+      "schema": "default"
     }
   ],
   "pages": [
@@ -238,6 +269,181 @@
             "y": 0,
             "width": 12,
             "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "455f4146",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<span style=\"font-size: 14px;\">**Kaplan-Meier Survival Curves: Toronto vs. NYC Response Times**</span>\n",
+                "\n",
+                "![final_km_overlay_toronto_vs_nyc.png](https://dbc-376dec61-d68c.cloud.databricks.com/ajax-api/2.0/workspace-files/Shared/DAMO_699-4-Capstone-Project/output/graphs/final_km_overlay_toronto_vs_nyc.png?o=479305206346181)\n",
+                "<p>&nbsp;</p>\n",
+                "\n",
+                "<p>&nbsp;</p>\n"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 12,
+            "height": 11
+          }
+        },
+        {
+          "widget": {
+            "name": "46e173ee",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "b517c9b7",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "hr",
+                      "expression": "`hr`"
+                    },
+                    {
+                      "name": "interpretation",
+                      "expression": "`interpretation`"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` IN (`city`) OR TRUE"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "annotations": [],
+              "frame": {
+                "showTitle": true,
+                "title": "Hazard ratio comparison chart"
+              },
+              "mark": {
+                "size": 3
+              },
+              "widgetType": "scatter",
+              "encodings": {
+                "x": {
+                  "fieldName": "hr",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "interpretation",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "color": {
+                  "fieldName": "city",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 13,
+            "width": 8,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "b904dd02",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<p>&nbsp;</p>\n",
+                "\n",
+                "Statistical Significance (Log-Rank Test)The difference in response times between Toronto and NYC is highly significant (p < 0.001). This confirms that the variation seen in the survival curves is not due to random chance."
+              ]
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 14,
+            "width": 4,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "4823700b",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "cd40467b",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "stratification",
+                      "expression": "`stratification`"
+                    },
+                    {
+                      "name": "higher_risk_group_tail",
+                      "expression": "`higher_risk_group_tail`"
+                    },
+                    {
+                      "name": "significant",
+                      "expression": "`significant`"
+                    },
+                    {
+                      "name": "p_value",
+                      "expression": "`p_value`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "city"
+                  },
+                  {
+                    "fieldName": "stratification"
+                  },
+                  {
+                    "fieldName": "higher_risk_group_tail"
+                  },
+                  {
+                    "fieldName": "significant"
+                  },
+                  {
+                    "fieldName": "p_value"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 19,
+            "width": 11,
+            "height": 5
           }
         }
       ],
