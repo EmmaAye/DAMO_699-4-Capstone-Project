@@ -287,6 +287,45 @@
         "    END\r\n",
         "ORDER BY city, day_type"
       ]
+    },
+    {
+      "name": "1664eecd",
+      "displayName": "p90_response_by_area",
+      "queryLines": [
+        "WITH area_p90 AS (\r\n",
+        "    SELECT\r\n",
+        "        city,\r\n",
+        "        location_area,\r\n",
+        "        percentile_approx(response_minutes, 0.9) AS p90_response,\r\n",
+        "        COUNT(*) AS incident_count\r\n",
+        "    FROM workspace.capstone_project.combined_model_ready\r\n",
+        "    WHERE response_minutes IS NOT NULL\r\n",
+        "      AND location_area IS NOT NULL\r\n",
+        "    GROUP BY city, location_area\r\n",
+        "    HAVING COUNT(*) >= 100\r\n",
+        "),\r\n",
+        "ranked AS (\r\n",
+        "    SELECT\r\n",
+        "        city,\r\n",
+        "        location_area,\r\n",
+        "        p90_response,\r\n",
+        "        incident_count,\r\n",
+        "        ROW_NUMBER() OVER (\r\n",
+        "            PARTITION BY city\r\n",
+        "            ORDER BY p90_response DESC\r\n",
+        "        ) AS p90_rank\r\n",
+        "    FROM area_p90\r\n",
+        ")\r\n",
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    location_area,\r\n",
+        "    p90_response,\r\n",
+        "    incident_count,\r\n",
+        "    p90_rank\r\n",
+        "FROM ranked\r\n",
+        "WHERE p90_rank <= 10\r\n",
+        "ORDER BY city, p90_rank"
+      ]
     }
   ],
   "pages": [
@@ -1603,9 +1642,118 @@
           },
           "position": {
             "x": 0,
-            "y": 0,
+            "y": 7,
             "width": 12,
             "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "a2c0978f",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<span style=\"text-align:center;display:block\"><span style=\"color:#FFAB00;font-size:24px\">**Spatial & Operation Signals**</span></span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "001999c7",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "1664eecd",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "p90_response",
+                      "expression": "`p90_response`"
+                    },
+                    {
+                      "name": "location_area",
+                      "expression": "`location_area`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "facet": {
+                "type": "wrap",
+                "fieldName": "city",
+                "displayName": "Top Areas by P90 Response Time",
+                "scale": {
+                  "type": "categorical"
+                }
+              },
+              "version": 3,
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "selectionColor"
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "p90_response",
+                  "displayName": "response time",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "location_area",
+                  "displayName": "location area",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  }
+                },
+                "color": {
+                  "fieldName": "city",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "NYC",
+                        "color": "#D5C943"
+                      },
+                      {
+                        "value": "Toronto",
+                        "color": {
+                          "themeColorType": "selectionColor"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 8,
+            "height": 6
           }
         }
       ],
