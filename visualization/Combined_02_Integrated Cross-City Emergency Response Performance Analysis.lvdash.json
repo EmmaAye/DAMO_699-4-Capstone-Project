@@ -579,37 +579,6 @@
       ]
     },
     {
-      "name": "4f8dec90",
-      "displayName": "city_hazard_ratios",
-      "queryLines": [
-        "SELECT * FROM workspace.capstone_project.city_hazard_ratios"
-      ]
-    },
-    {
-      "name": "cbbaab86",
-      "displayName": "logrank_summary_within_city",
-      "queryLines": [
-        "SELECT * FROM workspace.capstone_project.logrank_summary_within_city"
-      ]
-    },
-    {
-      "name": "2f7d1b3e",
-      "displayName": "Hazard Ratio Comparison",
-      "queryLines": [
-        "SELECT\n",
-        "  city,\n",
-        "  interpretation,\n",
-        "  hr,\n",
-        "  ci_lower,\n",
-        "  ci_upper,\n",
-        "  error_margin\n",
-        "FROM\n",
-        "  city_hazard_ratios"
-      ],
-      "catalog": "workspace",
-      "schema": "capstone_project"
-    },
-    {
       "name": "15757c5f",
       "displayName": "cox_nyc_hr",
       "queryLines": [
@@ -669,6 +638,31 @@
       ],
       "catalog": "workspace",
       "schema": "capstone_project"
+    },
+    {
+      "name": "97f23d86",
+      "displayName": "cox_survival_summary",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.cox_survival_summary"
+      ],
+      "catalog": "workspace",
+      "schema": "capstone_project"
+    },
+    {
+      "name": "0b4a1a86",
+      "displayName": "survival_delay_summary",
+      "queryLines": [
+        "SELECT\r\n",
+        "  city AS City,\r\n",
+        "\r\n",
+        "  ROUND(median_survival_min, 2) AS `Median (min)`,\r\n",
+        "\r\n",
+        "  ROUND(`S(5m)` * 100, 1)  AS `S(5 min) %`,\r\n",
+        "  ROUND(`S(10m)` * 100, 1) AS `S(10 min) %`\r\n",
+        "\r\n",
+        "FROM workspace.capstone_project.cox_survival_summary\r\n",
+        "WHERE city IN ('Toronto', 'NYC');"
+      ]
     }
   ],
   "pages": [
@@ -2489,7 +2483,7 @@
             "x": 0,
             "y": 23,
             "width": 12,
-            "height": 1
+            "height": 3
           }
         },
         {
@@ -3039,7 +3033,7 @@
           },
           "position": {
             "x": 0,
-            "y": 24,
+            "y": 26,
             "width": 12,
             "height": 3
           }
@@ -3049,7 +3043,7 @@
             "name": "64d8d7bc",
             "multilineTextboxSpec": {
               "lines": [
-                "![](https://github.com/EmmaAye/DAMO_699-4-Capstone-Project/blob/main/output/shap/toronto/toronto_shap_summary_pretty_top15.png?raw=true)<p style=\"text-align:center;font-weight:bold;\">Toronto — SHAP Summary (Top 15 drivers)</p>"
+                "![](https://github.com/EmmaAye/DAMO_699-4-Capstone-Project/blob/main/output/shap/toronto/toronto_shap_summary_pretty_top15.png?raw=false)"
               ]
             }
           },
@@ -3057,7 +3051,7 @@
             "x": 0,
             "y": 17,
             "width": 6,
-            "height": 7
+            "height": 9
           }
         },
         {
@@ -3073,7 +3067,7 @@
             "x": 6,
             "y": 17,
             "width": 6,
-            "height": 7
+            "height": 9
           }
         }
       ],
@@ -3089,15 +3083,15 @@
             "name": "455f4146",
             "multilineTextboxSpec": {
               "lines": [
-                "![](https://github.com/EmmaAye/DAMO_699-4-Capstone-Project/blob/CAPP-14_CAPP-103_CAPP-104_CAPP-105_executive_overview_eda_dashboard/output/graphs/final_km_baseline_toronto_vs_nyc.png?raw=false)"
+                "<span style=\"text-align:center;display:block;\">![](https://github.com/EmmaAye/DAMO_699-4-Capstone-Project/blob/CAPP-14_CAPP-103_CAPP-104_CAPP-105_executive_overview_eda_dashboard/output/graphs/final_km_baseline_toronto_vs_nyc.png?raw=false)</span>"
               ]
             }
           },
           "position": {
             "x": 0,
             "y": 1,
-            "width": 11,
-            "height": 11
+            "width": 5,
+            "height": 8
           }
         },
         {
@@ -3194,9 +3188,9 @@
           },
           "position": {
             "x": 0,
-            "y": 12,
-            "width": 7,
-            "height": 6
+            "y": 9,
+            "width": 10,
+            "height": 9
           }
         },
         {
@@ -3205,7 +3199,6 @@
             "multilineTextboxSpec": {
               "lines": [
                 "### Log-rank Test Summary (Within-City Factors)\n",
-                "<p>&nbsp;</p>\n",
                 "\n",
                 "**Toronto:**\n",
                 "\n",
@@ -3222,10 +3215,10 @@
             }
           },
           "position": {
-            "x": 7,
-            "y": 12,
-            "width": 4,
-            "height": 6
+            "x": 5,
+            "y": 4,
+            "width": 5,
+            "height": 5
           }
         },
         {
@@ -3240,8 +3233,66 @@
           "position": {
             "x": 0,
             "y": 0,
-            "width": 12,
+            "width": 10,
             "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "8311e559",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "0b4a1a86",
+                  "fields": [
+                    {
+                      "name": "City",
+                      "expression": "`City`"
+                    },
+                    {
+                      "name": "Median (min)",
+                      "expression": "`Median (min)`"
+                    },
+                    {
+                      "name": "S(5 min) %",
+                      "expression": "`S(5 min) %`"
+                    },
+                    {
+                      "name": "S(10 min) %",
+                      "expression": "`S(10 min) %`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "City"
+                  },
+                  {
+                    "fieldName": "Median (min)"
+                  },
+                  {
+                    "fieldName": "S(5 min) %"
+                  },
+                  {
+                    "fieldName": "S(10 min) %"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 5,
+            "y": 1,
+            "width": 5,
+            "height": 3
           }
         }
       ],
