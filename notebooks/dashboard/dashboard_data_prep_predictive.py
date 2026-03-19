@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 import pickle
 from pyspark.sql import functions as F
 from pyspark.sql.types import StructType, StructField, StringType, DoubleType
@@ -32,42 +33,52 @@ if not all_hazard_ratios.empty:
     print("Combined Hazard Ratios saved.")
 
 # 2. GENERATE PREDICTIVE METRICS AND DISTRIBUTIONS
-try:
-    nyc_forecast = spark.table("capstone_project.nyc_risk_forecast_output").withColumn("City", F.lit("NYC"))
-    toronto_forecast = spark.table("capstone_project.toronto_risk_forecast_output").withColumn("City", F.lit("Toronto"))
-    
-    combined_forecast = nyc_forecast.unionByName(toronto_forecast)
+base_output_dir = os.path.abspath("../../output")
+tables_dir = os.path.join(base_output_dir, "tables")
 
-    # Risk Distribution Histogram Data
+try:
+    # Load Data
+    nyc_pd = pd.read_csv(os.path.join(tables_dir, "rq4_nyc_forecast_best_model.csv"))
+    nyc_forecast = spark.createDataFrame(nyc_pd).withColumn("City", F.lit("NYC"))
+    
+    toronto_pd = pd.read_csv(os.path.join(tables_dir, "rq4_toronto_forecast_best_model.csv"))
+    toronto_forecast = spark.createDataFrame(toronto_pd).withColumn("City", F.lit("Toronto"))
+
+    def align_schema(df):
+        numeric_targets = ["delay_risk_probability", "response_minutes"]
+        for col_name in df.columns:
+            if col_name in numeric_targets:
+                df = df.withColumn(col_name, F.col(col_name).cast("double"))
+            else:
+                df = df.withColumn(col_name, F.col(col_name).cast("string"))
+        return df
+
+    nyc_forecast = align_schema(nyc_forecast)
+    toronto_forecast = align_schema(toronto_forecast)
+    combined_forecast = nyc_forecast.unionByName(toronto_forecast, allowMissingColumns=True)
+
+    delay_threshold = 5.7  
+    prob_threshold = 0.07  
+
+    combined_forecast = combined_forecast.fillna({"response_minutes": 0})
+
+    combined_forecast = combined_forecast \
+        .withColumn("prediction", F.when(F.col("delay_risk_probability") >= prob_threshold, 1).otherwise(0)) \
+        .withColumn("actual_label", F.when(F.col("response_minutes") > delay_threshold, 1).otherwise(0))
+
+    # Save for Confusion Matrix
+    combined_forecast.select("City", "prediction", "actual_label", "delay_risk_probability", "response_minutes") \
+        .write.mode("overwrite") \
+        .option("overwriteSchema", "true") \
+        .saveAsTable("capstone_project.dashboard_predictions_all")
+
+    # Save for Risk Distribution
     combined_forecast.select("City", "delay_risk_probability") \
         .write.mode("overwrite") \
         .option("overwriteSchema", "true") \
         .saveAsTable("capstone_project.dashboard_risk_distribution")
-
-    # Confusion Matrix Data
-    # Adding a prediction column based on 0.5 threshold
-    combined_forecast.withColumn("prediction", F.when(F.col("delay_risk_probability") > 0.5, 1).otherwise(0)) \
-        .select("City", "prediction", "delay_risk_probability") \
-        .write.mode("overwrite") \
-        .option("overwriteSchema", "true") \
-        .saveAsTable("capstone_project.dashboard_predictions_all")
-        
-    # Static Metrics Table (Accuracy, F1, AUC)
-    metrics_data = [
-        ("NYC Delay Classifier", 0.84, 0.82, 0.88, "XGBoost", "NYC"),
-        ("Toronto Delay Classifier", 0.81, 0.79, 0.85, "XGBoost", "Toronto"),
-        # ("Cox Survival Model", None, None, None, "Survival Analysis", "NYC"),
-        # ("Cox Survival Model", None, None, None, "Survival Analysis", "Toronto")
-    ]
     
-    metrics_schema = ["Model_Name", "Accuracy", "F1_Score", "AUC_ROC", "Algorithm", "City"]
-    
-    spark.createDataFrame(metrics_data, metrics_schema) \
-        .write.mode("overwrite") \
-        .option("overwriteSchema", "true") \
-        .saveAsTable("capstone_project.dashboard_metrics")
-
-    print("Dashboard tables updated with NYC and Toronto data!")
+    print("Dashboard tables updated successfully!")
 
 except Exception as e:
     print(f"Error processing forecast data: {e}")
