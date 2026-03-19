@@ -577,6 +577,134 @@
       "queryLines": [
         "SELECT * FROM workspace.capstone_project.cross_city_dependency"
       ]
+    },
+    {
+      "name": "15757c5f",
+      "displayName": "cox_nyc_hr",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.cox_nyc_hr"
+      ],
+      "catalog": "workspace",
+      "schema": "capstone_project"
+    },
+    {
+      "name": "f52c2071",
+      "displayName": "cox_toronto_hr",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.cox_toronto_hr"
+      ],
+      "catalog": "workspace",
+      "schema": "capstone_project"
+    },
+    {
+      "name": "7da26c8f",
+      "displayName": "cox_hr_comparison",
+      "queryLines": [
+        "SELECT feature, 'Toronto' AS city, hr_toronto AS hr\r\n",
+        "FROM (\r\n",
+        "  SELECT\r\n",
+        "    t.feature,\r\n",
+        "    CAST(t.hr AS DOUBLE) AS hr_toronto,\r\n",
+        "    CAST(n.hr AS DOUBLE) AS hr_nyc,\r\n",
+        "    CAST(t.ci_lower AS DOUBLE) AS ci_lower_toronto,\r\n",
+        "    CAST(t.ci_upper AS DOUBLE) AS ci_upper_toronto,\r\n",
+        "    CAST(n.ci_lower AS DOUBLE) AS ci_lower_nyc,\r\n",
+        "    CAST(n.ci_upper AS DOUBLE) AS ci_upper_nyc,\r\n",
+        "    CAST(t.rank AS INT) AS toronto_rank,\r\n",
+        "    CAST(n.rank AS INT) AS nyc_rank\r\n",
+        "  FROM workspace.capstone_project.cox_toronto_hr t\r\n",
+        "  JOIN workspace.capstone_project.cox_nyc_hr n\r\n",
+        "    ON TRIM(t.feature) = TRIM(n.feature)\r\n",
+        ")\r\n",
+        "\r\n",
+        "UNION ALL\r\n",
+        "\r\n",
+        "SELECT feature, 'NYC' AS city, hr_nyc AS hr\r\n",
+        "FROM (\r\n",
+        "  SELECT\r\n",
+        "    t.feature,\r\n",
+        "    CAST(t.hr AS DOUBLE) AS hr_toronto,\r\n",
+        "    CAST(n.hr AS DOUBLE) AS hr_nyc,\r\n",
+        "    CAST(t.ci_lower AS DOUBLE) AS ci_lower_toronto,\r\n",
+        "    CAST(t.ci_upper AS DOUBLE) AS ci_upper_toronto,\r\n",
+        "    CAST(n.ci_lower AS DOUBLE) AS ci_lower_nyc,\r\n",
+        "    CAST(n.ci_upper AS DOUBLE) AS ci_upper_nyc,\r\n",
+        "    CAST(t.rank AS INT) AS toronto_rank,\r\n",
+        "    CAST(n.rank AS INT) AS nyc_rank\r\n",
+        "  FROM workspace.capstone_project.cox_toronto_hr t\r\n",
+        "  JOIN workspace.capstone_project.cox_nyc_hr n\r\n",
+        "    ON TRIM(t.feature) = TRIM(n.feature)\r\n",
+        ")"
+      ],
+      "catalog": "workspace",
+      "schema": "capstone_project"
+    },
+    {
+      "name": "97f23d86",
+      "displayName": "cox_survival_summary",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.cox_survival_summary"
+      ],
+      "catalog": "workspace",
+      "schema": "capstone_project"
+    },
+    {
+      "name": "0b4a1a86",
+      "displayName": "survival_delay_summary",
+      "queryLines": [
+        "SELECT\r\n",
+        "  city AS City,\r\n",
+        "\r\n",
+        "  ROUND(median_survival_min, 2) AS `Median (min)`,\r\n",
+        "\r\n",
+        "  ROUND(`S(5m)` * 100, 1)  AS `S(5 min) %`,\r\n",
+        "  ROUND(`S(10m)` * 100, 1) AS `S(10 min) %`\r\n",
+        "\r\n",
+        "FROM workspace.capstone_project.cox_survival_summary\r\n",
+        "WHERE city IN ('Toronto', 'NYC');"
+      ]
+    },
+    {
+      "name": "1c62f149",
+      "displayName": "Model Performance Table",
+      "queryLines": [
+        "SELECT \n",
+        "  Model_Name,\n",
+        "  COALESCE(CAST(Accuracy AS STRING), '-') AS Accuracy,\n",
+        "  COALESCE(CAST(F1_Score AS STRING), '-') AS F1_Score,\n",
+        "  COALESCE(CAST(AUC_ROC AS STRING), '-') AS AUC_ROC,\n",
+        "  City\n",
+        "FROM capstone_project.dashboard_metrics"
+      ]
+    },
+    {
+      "name": "200d54f6",
+      "displayName": "Confusion Matrix Query",
+      "queryLines": [
+        "SELECT \n",
+        "  CASE WHEN delay_risk_probability >= 0.14 THEN 'Predicted: High Risk' \n",
+        "       ELSE 'Predicted: Low Risk' END AS Predicted, 'Actual: On-Time' AS Actual, COUNT(*) AS Total_Incidents\n",
+        "FROM capstone_project.dashboard_predictions_all\n",
+        "GROUP BY 1, 2\n",
+        "ORDER BY 1, 2"
+      ]
+    },
+    {
+      "name": "77c729de",
+      "displayName": "Feature Importance Chart",
+      "queryLines": [
+        "SELECT Feature, Hazard_Ratio \n",
+        "FROM capstone_project.dashboard_hazard_ratios\n",
+        "ORDER BY Hazard_Ratio ASC"
+      ]
+    },
+    {
+      "name": "f7187b31",
+      "displayName": "Risk Distribution Histogram",
+      "queryLines": [
+        "SELECT delay_risk_probability \n",
+        "FROM capstone_project.dashboard_predictions_all"
+      ]
     }
   ],
   "pages": [
@@ -684,7 +812,7 @@
           "position": {
             "x": 0,
             "y": 0,
-            "width": 12,
+            "width": 10,
             "height": 2
           }
         },
@@ -756,7 +884,7 @@
           "position": {
             "x": 4,
             "y": 2,
-            "width": 8,
+            "width": 6,
             "height": 3
           }
         },
@@ -931,7 +1059,8 @@
                             "operator": ">"
                           },
                           "backgroundColor": "#ffefd5",
-                          "foregroundColor": "#d2691e"
+                          "foregroundColor": "#d2691e",
+                          "bold": true
                         }
                       ]
                     }
@@ -973,7 +1102,7 @@
           "position": {
             "x": 4,
             "y": 5,
-            "width": 8,
+            "width": 6,
             "height": 3
           }
         },
@@ -1017,9 +1146,9 @@
             }
           },
           "position": {
-            "x": 8,
+            "x": 7,
             "y": 8,
-            "width": 4,
+            "width": 3,
             "height": 1
           }
         },
@@ -1065,7 +1194,7 @@
           "position": {
             "x": 4,
             "y": 8,
-            "width": 4,
+            "width": 3,
             "height": 1
           }
         }
@@ -2283,7 +2412,7 @@
           "position": {
             "x": 0,
             "y": 13,
-            "width": 8,
+            "width": 7,
             "height": 5
           }
         },
@@ -2373,7 +2502,7 @@
           "position": {
             "x": 0,
             "y": 18,
-            "width": 8,
+            "width": 7,
             "height": 5
           }
         },
@@ -2396,7 +2525,7 @@
             "x": 0,
             "y": 23,
             "width": 12,
-            "height": 1
+            "height": 3
           }
         },
         {
@@ -2463,9 +2592,9 @@
             }
           },
           "position": {
-            "x": 8,
+            "x": 7,
             "y": 13,
-            "width": 4,
+            "width": 5,
             "height": 5
           }
         },
@@ -2535,9 +2664,9 @@
             }
           },
           "position": {
-            "x": 8,
+            "x": 7,
             "y": 18,
-            "width": 4,
+            "width": 5,
             "height": 5
           }
         }
@@ -2566,6 +2695,274 @@
             "y": 0,
             "width": 12,
             "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "bd14ada7",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "200d54f6",
+                  "fields": [
+                    {
+                      "name": "Total_Incidents",
+                      "expression": "`Total_Incidents`"
+                    },
+                    {
+                      "name": "Predicted",
+                      "expression": "`Predicted`"
+                    },
+                    {
+                      "name": "Actual",
+                      "expression": "`Actual`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showDescription": true,
+                "description": ""
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "Predicted",
+                  "axis": {
+                    "title": "Model Prediction Classifier"
+                  },
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "Actual",
+                  "axis": {
+                    "title": "Actual Outcome (Historical Data)"
+                  },
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "color": {
+                  "fieldName": "Total_Incidents",
+                  "scale": {
+                    "type": "quantitative",
+                    "colorRamp": {
+                      "mode": "scheme",
+                      "scheme": "blues"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "4fcca504",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "1c62f149",
+                  "fields": [
+                    {
+                      "name": "Accuracy",
+                      "expression": "`Accuracy`"
+                    },
+                    {
+                      "name": "F1_Score",
+                      "expression": "`F1_Score`"
+                    },
+                    {
+                      "name": "AUC_ROC",
+                      "expression": "`AUC_ROC`"
+                    },
+                    {
+                      "name": "Model_Name",
+                      "expression": "`Model_Name`"
+                    },
+                    {
+                      "name": "City",
+                      "expression": "`City`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "Accuracy"
+                  },
+                  {
+                    "fieldName": "F1_Score"
+                  },
+                  {
+                    "fieldName": "AUC_ROC"
+                  },
+                  {
+                    "fieldName": "Model_Name"
+                  },
+                  {
+                    "fieldName": "City"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 12,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "5bfb50d6",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "77c729de",
+                  "fields": [
+                    {
+                      "name": "avg(Hazard_Ratio)",
+                      "expression": "AVG(`Hazard_Ratio`)"
+                    },
+                    {
+                      "name": "Feature",
+                      "expression": "`Feature`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "annotations": [
+                {
+                  "type": "vertical-line",
+                  "encodings": {
+                    "x": {
+                      "dataValue": "1",
+                      "dataType": "DOUBLE"
+                    }
+                  }
+                }
+              ],
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "avg(Hazard_Ratio)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "Feature",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "9efac4e8",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "77c729de",
+                  "fields": [
+                    {
+                      "name": "Hazard_Ratio",
+                      "expression": "`Hazard_Ratio`"
+                    },
+                    {
+                      "name": "Feature",
+                      "expression": "`Feature`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Top Features by Hazard Ratio",
+                "showTitle": true,
+                "showDescription": true,
+                "description": ""
+              },
+              "widgetType": "histogram",
+              "encodings": {
+                "x": {
+                  "fieldName": "Feature",
+                  "axis": {
+                    "title": "Predicted Delay Probability (0 to 1)"
+                  },
+                  "displayName": "Feature",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "Hazard_Ratio",
+                  "axis": {
+                    "title": "Number of Incidents"
+                  },
+                  "displayName": "Hazard Ratio",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "Hazard_Ratio",
+                  "displayName": "Hazard Ratio",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 17,
+            "width": 12,
+            "height": 9
           }
         }
       ],
@@ -2946,7 +3343,7 @@
           },
           "position": {
             "x": 0,
-            "y": 24,
+            "y": 26,
             "width": 12,
             "height": 3
           }
@@ -2956,7 +3353,7 @@
             "name": "64d8d7bc",
             "multilineTextboxSpec": {
               "lines": [
-                "![](https://github.com/EmmaAye/DAMO_699-4-Capstone-Project/blob/main/output/shap/toronto/toronto_shap_summary_pretty_top15.png?raw=true)<p style=\"text-align:center;font-weight:bold;\">Toronto — SHAP Summary (Top 15 drivers)</p>"
+                "![](https://github.com/EmmaAye/DAMO_699-4-Capstone-Project/blob/main/output/shap/toronto/toronto_shap_summary_pretty_top15.png?raw=false)"
               ]
             }
           },
@@ -2964,7 +3361,7 @@
             "x": 0,
             "y": 17,
             "width": 6,
-            "height": 7
+            "height": 9
           }
         },
         {
@@ -2980,7 +3377,7 @@
             "x": 6,
             "y": 17,
             "width": 6,
-            "height": 7
+            "height": 9
           }
         }
       ],
@@ -2993,83 +3390,104 @@
       "layout": [
         {
           "widget": {
-            "name": "1621f716",
+            "name": "455f4146",
             "multilineTextboxSpec": {
               "lines": [
-                "- Kaplan–Meier overlay (primary visual)\n",
-                "- Log-rank summary box\n",
-                "- Hazard ratio comparison chart\n",
-                "- Optional: ONE stratified survival plot"
+                "<span style=\"text-align:center;display:block;\">![](https://github.com/EmmaAye/DAMO_699-4-Capstone-Project/blob/CAPP-14_CAPP-103_CAPP-104_CAPP-105_executive_overview_eda_dashboard/output/graphs/final_km_baseline_toronto_vs_nyc.png?raw=false)</span>"
               ]
             }
           },
           "position": {
             "x": 0,
-            "y": 0,
-            "width": 12,
-            "height": 2
+            "y": 1,
+            "width": 5,
+            "height": 8
           }
         },
         {
           "widget": {
-            "name": "84aee825",
+            "name": "46e173ee",
             "queries": [
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "ac05473d",
+                  "datasetName": "7da26c8f",
                   "fields": [
                     {
                       "name": "city",
                       "expression": "`city`"
                     },
                     {
-                      "name": "measure(hazard_ratio)",
-                      "expression": "MEASURE(`hazard_ratio`)"
+                      "name": "hr",
+                      "expression": "`hr`"
+                    },
+                    {
+                      "name": "feature",
+                      "expression": "`feature`"
                     }
                   ],
-                  "disaggregated": false
+                  "disaggregated": true
                 }
               }
             ],
             "spec": {
               "version": 3,
+              "annotations": [
+                {
+                  "type": "vertical-line",
+                  "encodings": {
+                    "x": {
+                      "dataValue": "1",
+                      "dataType": "DOUBLE"
+                    },
+                    "color": {
+                      "value": "#A00909"
+                    }
+                  }
+                }
+              ],
               "frame": {
-                "title": "Hazard Ratio Comparison",
-                "showTitle": true
+                "showTitle": true,
+                "title": "Hazard Ratio Comparison of Response Drivers (HR = 1 = Neutral Baseline)",
+                "showDescription": false,
+                "description": ""
+              },
+              "mark": {
+                "layout": "stack"
               },
               "widgetType": "bar",
               "encodings": {
                 "x": {
-                  "fieldName": "city",
-                  "displayName": "City",
-                  "scale": {
-                    "type": "categorical"
-                  }
-                },
-                "y": {
-                  "fieldName": "measure(hazard_ratio)",
-                  "format": {
-                    "type": "number-plain",
-                    "decimalPlaces": {
-                      "type": "exact",
-                      "places": 2
-                    },
-                    "abbreviation": "none"
-                  },
-                  "displayName": "Hazard Ratio",
+                  "fieldName": "hr",
                   "scale": {
                     "type": "quantitative"
                   }
                 },
+                "y": {
+                  "fieldName": "feature",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  }
+                },
                 "color": {
                   "fieldName": "city",
-                  "legend": {
-                    "position": "right"
-                  },
-                  "displayName": "City",
                   "scale": {
-                    "type": "categorical"
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "NYC",
+                        "color": "#D8ED52"
+                      },
+                      {
+                        "value": "Toronto",
+                        "color": {
+                          "themeColorType": "selectionColor"
+                        }
+                      }
+                    ]
                   }
                 },
                 "label": {
@@ -3079,10 +3497,112 @@
             }
           },
           "position": {
-            "x": 1,
-            "y": 3,
-            "width": 6,
-            "height": 6
+            "x": 0,
+            "y": 9,
+            "width": 10,
+            "height": 9
+          }
+        },
+        {
+          "widget": {
+            "name": "b904dd02",
+            "multilineTextboxSpec": {
+              "lines": [
+                "### Log-rank Test Summary (Within-City Factors)\n",
+                "\n",
+                "**Toronto:**\n",
+                "\n",
+                "- **Hour** → Significant (p < 0.001), Highest delay: Night  \n",
+                "- **Season** → Significant (p < 0.001), Highest delay: Summer  \n",
+                "-  **Day of Week&#32;** → Significant (p < 0.001), Highest delay: Wednesday  \n",
+                "\n",
+                "**NYC:**\n",
+                "\n",
+                "- **Hour&#32;** → Significant (p < 0.001), Highest delay: Night  \n",
+                "- **Season&#32;** → Significant (p < 0.001), Highest delay: Summer  \n",
+                "- **Day of Week** → Significant (p < 0.001), Highest delay: Wednesday  "
+              ]
+            }
+          },
+          "position": {
+            "x": 5,
+            "y": 4,
+            "width": 5,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "e10d2c14",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<span style=\"text-align:center;display:block;\"><span style=\"font-size: 24px;color: #FFAB00;\">**Survival Analysis**</span></span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 10,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "8311e559",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "0b4a1a86",
+                  "fields": [
+                    {
+                      "name": "City",
+                      "expression": "`City`"
+                    },
+                    {
+                      "name": "Median (min)",
+                      "expression": "`Median (min)`"
+                    },
+                    {
+                      "name": "S(5 min) %",
+                      "expression": "`S(5 min) %`"
+                    },
+                    {
+                      "name": "S(10 min) %",
+                      "expression": "`S(10 min) %`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "City"
+                  },
+                  {
+                    "fieldName": "Median (min)"
+                  },
+                  {
+                    "fieldName": "S(5 min) %"
+                  },
+                  {
+                    "fieldName": "S(10 min) %"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 5,
+            "y": 1,
+            "width": 5,
+            "height": 3
           }
         }
       ],
