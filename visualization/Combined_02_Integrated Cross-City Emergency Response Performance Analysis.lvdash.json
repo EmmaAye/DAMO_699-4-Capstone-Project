@@ -3089,7 +3089,7 @@
             "name": "455f4146",
             "multilineTextboxSpec": {
               "lines": [
-                "[![](https://github.com/EmmaAye/DAMO_699-4-Capstone-Project/blob/CAPP-14_CAPP-103_CAPP-104_CAPP-105_executive_overview_eda_dashboard/output/graphs/final_km_baseline_toronto_vs_nyc.png?raw=true)]"
+                "![](https://github.com/EmmaAye/DAMO_699-4-Capstone-Project/blob/CAPP-14_CAPP-103_CAPP-104_CAPP-105_executive_overview_eda_dashboard/output/graphs/final_km_baseline_toronto_vs_nyc.png?raw=false)"
               ]
             }
           },

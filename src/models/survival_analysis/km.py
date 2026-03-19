@@ -54,7 +54,7 @@ def km_overlay_plot(
 
     ax.set_xlim(0, censor_threshold)
     ax.set_ylim(0, 1.0)
-    ax.set_xlabel("Response time (minutes)",fontweight = "bold")
+    ax.set_xlabel("Response time (minutes)")
     ax.set_ylabel("Probability that the unit has not arrived yet")
     # ax.set_ylabel("Survival Probability (Not Arrived)",fontweight = "bold")
     ax.set_title(title, fontsize = 12, fontweight="bold")
