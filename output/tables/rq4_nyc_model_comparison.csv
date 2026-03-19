@@ -1,0 +1,5 @@
+Model,AUC-ROC,PR-AUC,Precision,Recall,F1-Score,Accuracy
+GBT Classifier,0.68,0.245,0.833,0.86,0.795,0.86
+Logistic Regression,0.67,0.224,0.809,0.86,0.795,0.86
+Random Forest,0.571,0.218,0.739,0.86,0.795,0.86
+Naive Majority Class,0.5,0.14,0.739,0.86,0.795,0.86

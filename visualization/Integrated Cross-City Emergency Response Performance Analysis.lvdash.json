@@ -23,7 +23,7 @@
     },
     {
       "name": "1c62f149",
-      "displayName": "Model Performance Table",
+      "displayName": "Model Performance Table (NYC & Toronto)",
       "queryLines": [
         "SELECT \n",
         "  Model_Name,\n",
@@ -36,30 +36,40 @@
     },
     {
       "name": "200d54f6",
-      "displayName": "Confusion Matrix Query",
+      "displayName": "Predicted Delay Risk Distribution (NYC & Toronto)",
       "queryLines": [
         "SELECT \n",
         "  CASE WHEN delay_risk_probability >= 0.14 THEN 'Predicted: High Risk' \n",
         "       ELSE 'Predicted: Low Risk' END AS Predicted, 'Actual: On-Time' AS Actual, COUNT(*) AS Total_Incidents\n",
         "FROM capstone_project.dashboard_predictions_all\n",
         "GROUP BY 1, 2\n",
-        "ORDER BY 1, 2"
+        "ORDER BY 1, 2\n",
+        "-- SELECT \n",
+        "--   CASE \n",
+        "--     WHEN delay_risk_probability >= 0.14 THEN 'High Risk' \n",
+        "--     ELSE 'Low Risk' \n",
+        "--   END AS risk_category,\n",
+        "--   COUNT(*) AS total_incidents,\n",
+        "--   ROUND(AVG(delay_risk_probability) * 100, 2) AS avg_probability_pct\n",
+        "-- FROM capstone_project.dashboard_predictions_all\n",
+        "-- GROUP BY 1\n",
+        "-- ORDER BY 1 DESC;"
       ]
     },
     {
       "name": "77c729de",
-      "displayName": "Feature Importance Chart",
+      "displayName": "Features on Fire Incident Delay Risk",
       "queryLines": [
-        "SELECT Feature, Hazard_Ratio \n",
+        "SELECT Feature, Hazard_Ratio, City\n",
         "FROM capstone_project.dashboard_hazard_ratios\n",
         "ORDER BY Hazard_Ratio ASC"
       ]
     },
     {
       "name": "f7187b31",
-      "displayName": "Risk Distribution Histogram",
+      "displayName": "Distribution of Predicted Delay Risk Probabilities",
       "queryLines": [
-        "SELECT delay_risk_probability \n",
+        "SELECT delay_risk_probability, City\n",
         "FROM capstone_project.dashboard_predictions_all"
       ]
     }
@@ -211,25 +221,6 @@
       "layout": [
         {
           "widget": {
-            "name": "57529707",
-            "multilineTextboxSpec": {
-              "lines": [
-                "- Model performance table (Accuracy, F1, AUC)\n",
-                "- Confusion matrix\n",
-                "- Feature importance chart \n",
-                "- Risk distribution histogram (add only if it adds something unique.)"
-              ]
-            }
-          },
-          "position": {
-            "x": 0,
-            "y": 0,
-            "width": 12,
-            "height": 2
-          }
-        },
-        {
-          "widget": {
             "name": "bd14ada7",
             "queries": [
               {
@@ -238,16 +229,16 @@
                   "datasetName": "200d54f6",
                   "fields": [
                     {
-                      "name": "Total_Incidents",
-                      "expression": "`Total_Incidents`"
+                      "name": "avg_probability_pct",
+                      "expression": "`avg_probability_pct`"
                     },
                     {
-                      "name": "Predicted",
-                      "expression": "`Predicted`"
+                      "name": "risk_category",
+                      "expression": "`risk_category`"
                     },
                     {
-                      "name": "Actual",
-                      "expression": "`Actual`"
+                      "name": "total_incidents",
+                      "expression": "`total_incidents`"
                     }
                   ],
                   "disaggregated": true
@@ -257,13 +248,15 @@
             "spec": {
               "version": 3,
               "frame": {
-                "showDescription": true,
-                "description": ""
+                "showDescription": false,
+                "description": "",
+                "showTitle": true,
+                "title": "Predicted Delay Risk Distribution (NYC & Toronto)"
               },
               "widgetType": "bar",
               "encodings": {
                 "x": {
-                  "fieldName": "Predicted",
+                  "fieldName": "risk_category",
                   "axis": {
                     "title": "Model Prediction Classifier"
                   },
@@ -272,16 +265,16 @@
                   }
                 },
                 "y": {
-                  "fieldName": "Actual",
+                  "fieldName": "total_incidents",
                   "axis": {
-                    "title": "Actual Outcome (Historical Data)"
+                    "title": "Number of Incidents"
                   },
                   "scale": {
                     "type": "categorical"
                   }
                 },
                 "color": {
-                  "fieldName": "Total_Incidents",
+                  "fieldName": "avg_probability_pct",
                   "scale": {
                     "type": "quantitative",
                     "colorRamp": {
@@ -295,7 +288,7 @@
           },
           "position": {
             "x": 0,
-            "y": 5,
+            "y": 3,
             "width": 12,
             "height": 6
           }
@@ -336,6 +329,10 @@
             ],
             "spec": {
               "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Model Performance Table (NYC & Toronto)"
+              },
               "widgetType": "table",
               "encodings": {
                 "columns": [
@@ -360,7 +357,7 @@
           },
           "position": {
             "x": 0,
-            "y": 2,
+            "y": 0,
             "width": 12,
             "height": 3
           }
@@ -381,6 +378,10 @@
                     {
                       "name": "Feature",
                       "expression": "`Feature`"
+                    },
+                    {
+                      "name": "City",
+                      "expression": "`City`"
                     }
                   ],
                   "disaggregated": false
@@ -388,6 +389,13 @@
               }
             ],
             "spec": {
+              "facet": {
+                "type": "wrap",
+                "fieldName": "City",
+                "scale": {
+                  "type": "categorical"
+                }
+              },
               "version": 3,
               "annotations": [
                 {
@@ -400,6 +408,10 @@
                   }
                 }
               ],
+              "frame": {
+                "showTitle": true,
+                "title": "Impact of Features on Fire Incident Delay Risk (Hazard Ratios)"
+              },
               "widgetType": "bar",
               "encodings": {
                 "x": {
@@ -422,7 +434,7 @@
           },
           "position": {
             "x": 0,
-            "y": 11,
+            "y": 9,
             "width": 12,
             "height": 6
           }
@@ -443,6 +455,10 @@
                     {
                       "name": "Feature",
                       "expression": "`Feature`"
+                    },
+                    {
+                      "name": "City",
+                      "expression": "`City`"
                     }
                   ],
                   "disaggregated": true
@@ -450,11 +466,18 @@
               }
             ],
             "spec": {
+              "facet": {
+                "type": "wrap",
+                "fieldName": "City",
+                "scale": {
+                  "type": "categorical"
+                }
+              },
               "version": 3,
               "frame": {
-                "title": "Top Features by Hazard Ratio",
+                "title": "Distribution of Predicted Delay Risk Probabilities (NYC & Toronto)",
                 "showTitle": true,
-                "showDescription": true,
+                "showDescription": false,
                 "description": ""
               },
               "widgetType": "histogram",
@@ -491,7 +514,7 @@
           },
           "position": {
             "x": 0,
-            "y": 17,
+            "y": 15,
             "width": 12,
             "height": 9
           }
