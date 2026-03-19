@@ -42,7 +42,10 @@ def km_overlay_plot(
     thresholds=DEFAULT_THRESHOLDS,
     title="Kaplan–Meier Survival — Cross-City",
 ):
+    # For dashboard
     plt.figure(figsize=(6, 4))
+    # For Poster
+    # plt.figure(figsize=(10, 6))
     ax = plt.gca()
 
     km_a.plot_survival_function(ax=ax, ci_show=False)
