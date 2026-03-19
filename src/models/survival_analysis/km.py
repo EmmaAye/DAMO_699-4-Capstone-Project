@@ -42,7 +42,7 @@ def km_overlay_plot(
     thresholds=DEFAULT_THRESHOLDS,
     title="Kaplan–Meier Survival — Cross-City",
 ):
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(6, 4))
     ax = plt.gca()
 
     km_a.plot_survival_function(ax=ax, ci_show=False)
@@ -136,7 +136,7 @@ def km_plot_stratified(
     Stratified KM plotting from your stratified notebook.
     (This function only plots; testing lives in stats.py)
     """
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(6, 4))
     ax = plt.gca()
 
     if group_order is None:
