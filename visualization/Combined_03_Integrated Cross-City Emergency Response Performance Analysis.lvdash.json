@@ -2692,7 +2692,7 @@
           },
           "position": {
             "x": 0,
-            "y": 0,
+            "y": 26,
             "width": 12,
             "height": 2
           }
@@ -2743,10 +2743,17 @@
                 "y": {
                   "fieldName": "Actual",
                   "axis": {
-                    "title": "Actual Outcome (Historical Data)"
+                    "title": "Actual (Historical Data)"
                   },
+                  "displayName": "Actual Outcome",
                   "scale": {
-                    "type": "categorical"
+                    "type": "categorical",
+                    "sort": {
+                      "by": "custom-order",
+                      "orderedValues": [
+                        "Actual: On-Time"
+                      ]
+                    }
                   }
                 },
                 "color": {
@@ -2755,18 +2762,21 @@
                     "type": "quantitative",
                     "colorRamp": {
                       "mode": "scheme",
-                      "scheme": "blues"
+                      "scheme": "greenblue"
                     }
                   }
+                },
+                "label": {
+                  "show": false
                 }
               }
             }
           },
           "position": {
             "x": 0,
-            "y": 5,
+            "y": 4,
             "width": 12,
-            "height": 6
+            "height": 7
           }
         },
         {
@@ -2829,7 +2839,7 @@
           },
           "position": {
             "x": 0,
-            "y": 2,
+            "y": 1,
             "width": 12,
             "height": 3
           }
@@ -2869,6 +2879,11 @@
                   }
                 }
               ],
+              "mark": {
+                "colors": [
+                  "#48C7D3"
+                ]
+              },
               "widgetType": "bar",
               "encodings": {
                 "x": {
@@ -2882,7 +2897,7 @@
                   "scale": {
                     "type": "categorical",
                     "sort": {
-                      "by": "x"
+                      "by": "x-reversed"
                     }
                   }
                 }
@@ -2952,7 +2967,11 @@
                   "fieldName": "Hazard_Ratio",
                   "displayName": "Hazard Ratio",
                   "scale": {
-                    "type": "quantitative"
+                    "type": "quantitative",
+                    "colorRamp": {
+                      "mode": "scheme",
+                      "scheme": "greenblue"
+                    }
                   }
                 }
               }
@@ -2963,6 +2982,22 @@
             "y": 17,
             "width": 12,
             "height": 9
+          }
+        },
+        {
+          "widget": {
+            "name": "a5f11f75",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<span style=\"text-align:center;display:block;\"><span style=\"font-size: 24px;color: #FFAB00;\">**Predictive Modeling**</span></span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 1
           }
         }
       ],
