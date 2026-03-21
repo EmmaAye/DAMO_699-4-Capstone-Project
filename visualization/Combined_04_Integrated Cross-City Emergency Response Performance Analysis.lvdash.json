@@ -614,7 +614,7 @@
         "  COALESCE(CAST(F1_Score AS STRING), '-') AS F1_Score,\r\n",
         "  COALESCE(CAST(AUC_ROC AS STRING), '-') AS AUC_ROC,\r\n",
         "  City\r\n",
-        "FROM workspace.capstone_project.dashboard_metrics"
+        "FROM capstone_project.dashboard_metrics"
       ]
     },
     {
@@ -631,9 +631,9 @@
         "    ELSE 'Actual: On-Time'\r\n",
         "  END AS Actual,\r\n",
         "  COUNT(*) AS Total_Incidents\r\n",
-        "FROM workspace.capstone_project.dashboard_predictions_all\r\n",
+        "FROM capstone_project.dashboard_predictions_all\r\n",
         "GROUP BY 1, 2\r\n",
-        "ORDER BY Actual DESC, Predicted DESC\r\n"
+        "ORDER BY Actual DESC, Predicted DESC"
       ]
     },
     {
@@ -641,8 +641,8 @@
       "displayName": "Features on Fire Incident Delay Risk",
       "queryLines": [
         "SELECT Feature, Hazard_Ratio, City\r\n",
-        "FROM workspace.capstone_project.dashboard_hazard_ratios\r\n",
-        "ORDER BY Hazard_Ratio ASC"
+        "FROM capstone_project.dashboard_hazard_ratios\r\n",
+        "ORDER BY Hazard_Ratio ASC\r\n"
       ]
     },
     {
@@ -650,7 +650,7 @@
       "displayName": "Distribution of Predicted Delay Risk Probabilities",
       "queryLines": [
         "SELECT delay_risk_probability, City\r\n",
-        "FROM workspace.capstone_project.dashboard_predictions_all"
+        "FROM capstone_project.dashboard_predictions_all"
       ]
     }
   ],
@@ -2676,7 +2676,33 @@
                 "color": {
                   "fieldName": "Total_Incidents",
                   "scale": {
-                    "type": "categorical"
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": 4,
+                        "color": {
+                          "themeColorType": "fontColor"
+                        }
+                      },
+                      {
+                        "value": 6,
+                        "color": {
+                          "themeColorType": "widgetBorderColor"
+                        }
+                      },
+                      {
+                        "value": 18,
+                        "color": {
+                          "themeColorType": "canvasBackgroundColor"
+                        }
+                      },
+                      {
+                        "value": 20,
+                        "color": {
+                          "themeColorType": "selectionColor"
+                        }
+                      }
+                    ]
                   }
                 }
               }
