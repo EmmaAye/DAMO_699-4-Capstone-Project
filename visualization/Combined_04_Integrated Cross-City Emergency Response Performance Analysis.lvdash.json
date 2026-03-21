@@ -122,18 +122,6 @@
       ]
     },
     {
-      "name": "6d336bea",
-      "displayName": "SLA_breach_pct",
-      "queryLines": [
-        "SELECT\r\n",
-        "    city,\r\n",
-        "    AVG(CASE WHEN response_minutes > 5 THEN 1 ELSE 0 END) * 100 AS response_gt_5min_pct,\r\n",
-        "    AVG(CASE WHEN response_minutes > 8 THEN 1 ELSE 0 END) * 100 AS response_gt_8min_pct\r\n",
-        "FROM workspace.capstone_project.combined_model_ready\r\n",
-        "GROUP BY city"
-      ]
-    },
-    {
       "name": "a5fa88a6",
       "displayName": "SLA_Breach_Long_Format",
       "queryLines": [
@@ -338,13 +326,6 @@
         "FROM ranked\r\n",
         "WHERE p90_rank <= 10\r\n",
         "ORDER BY city, p90_rank"
-      ]
-    },
-    {
-      "name": "be1e1ab1",
-      "displayName": "fire_station_dataset",
-      "queryLines": [
-        "SELECT * FROM workspace.capstone_project.fire_station_dataset"
       ]
     },
     {
@@ -565,38 +546,6 @@
       ]
     },
     {
-      "name": "82b0fb4d",
-      "displayName": "cross_city_shap",
-      "queryLines": [
-        "SELECT * FROM workspace.capstone_project.cross_city_shap"
-      ]
-    },
-    {
-      "name": "8291e7ff",
-      "displayName": "cross_city_dependency",
-      "queryLines": [
-        "SELECT * FROM workspace.capstone_project.cross_city_dependency"
-      ]
-    },
-    {
-      "name": "15757c5f",
-      "displayName": "cox_nyc_hr",
-      "queryLines": [
-        "SELECT * FROM workspace.capstone_project.cox_nyc_hr"
-      ],
-      "catalog": "workspace",
-      "schema": "capstone_project"
-    },
-    {
-      "name": "f52c2071",
-      "displayName": "cox_toronto_hr",
-      "queryLines": [
-        "SELECT * FROM workspace.capstone_project.cox_toronto_hr"
-      ],
-      "catalog": "workspace",
-      "schema": "capstone_project"
-    },
-    {
       "name": "7da26c8f",
       "displayName": "cox_hr_comparison",
       "queryLines": [
@@ -640,15 +589,6 @@
       "schema": "capstone_project"
     },
     {
-      "name": "97f23d86",
-      "displayName": "cox_survival_summary",
-      "queryLines": [
-        "SELECT * FROM workspace.capstone_project.cox_survival_summary"
-      ],
-      "catalog": "workspace",
-      "schema": "capstone_project"
-    },
-    {
       "name": "0b4a1a86",
       "displayName": "survival_delay_summary",
       "queryLines": [
@@ -665,37 +605,52 @@
       ]
     },
     {
-      "name": "1c62f149",
-      "displayName": "Model Performance Table",
+      "name": "bbf9ad77",
+      "displayName": "Model Performance Table (NYC & Toronto)",
       "queryLines": [
-        "SELECT \n",
-        "  Model_Name,\n",
-        "  COALESCE(CAST(Accuracy AS STRING), '-') AS Accuracy,\n",
-        "  COALESCE(CAST(F1_Score AS STRING), '-') AS F1_Score,\n",
-        "  COALESCE(CAST(AUC_ROC AS STRING), '-') AS AUC_ROC,\n",
-        "  City\n",
-        "FROM capstone_project.dashboard_metrics"
+        "SELECT \r\n",
+        "  Model_Name,\r\n",
+        "  COALESCE(CAST(Accuracy AS STRING), '-') AS Accuracy,\r\n",
+        "  COALESCE(CAST(F1_Score AS STRING), '-') AS F1_Score,\r\n",
+        "  COALESCE(CAST(AUC_ROC AS STRING), '-') AS AUC_ROC,\r\n",
+        "  City\r\n",
+        "FROM workspace.capstone_project.dashboard_metrics"
       ]
     },
     {
-      "name": "200d54f6",
-      "displayName": "Confusion Matrix Query",
+      "name": "93df88bf",
+      "displayName": "Predicted Delay Risk Distribution (NYC & Toronto)",
       "queryLines": [
-        "SELECT \n",
-        "  CASE WHEN delay_risk_probability >= 0.14 THEN 'Predicted: High Risk' \n",
-        "       ELSE 'Predicted: Low Risk' END AS Predicted, 'Actual: On-Time' AS Actual, COUNT(*) AS Total_Incidents\n",
-        "FROM capstone_project.dashboard_predictions_all\n",
-        "GROUP BY 1, 2\n",
-        "ORDER BY 1, 2"
+        "SELECT \r\n",
+        "  CASE \r\n",
+        "    WHEN delay_risk_probability >= 0.07 THEN 'Predicted: High Risk' \r\n",
+        "    ELSE 'Predicted: Low Risk' \r\n",
+        "  END AS Predicted,\r\n",
+        "  CASE \r\n",
+        "    WHEN actual_label = 1 THEN 'Actual: Delayed'\r\n",
+        "    ELSE 'Actual: On-Time'\r\n",
+        "  END AS Actual,\r\n",
+        "  COUNT(*) AS Total_Incidents\r\n",
+        "FROM workspace.capstone_project.dashboard_predictions_all\r\n",
+        "GROUP BY 1, 2\r\n",
+        "ORDER BY Actual DESC, Predicted DESC\r\n"
       ]
     },
     {
-      "name": "77c729de",
-      "displayName": "Feature Importance Chart",
+      "name": "daeeba71",
+      "displayName": "Features on Fire Incident Delay Risk",
       "queryLines": [
-        "SELECT Feature, Hazard_Ratio \n",
-        "FROM capstone_project.dashboard_hazard_ratios\n",
+        "SELECT Feature, Hazard_Ratio, City\r\n",
+        "FROM workspace.capstone_project.dashboard_hazard_ratios\r\n",
         "ORDER BY Hazard_Ratio ASC"
+      ]
+    },
+    {
+      "name": "c21b8791",
+      "displayName": "Distribution of Predicted Delay Risk Probabilities",
+      "queryLines": [
+        "SELECT delay_risk_probability, City\r\n",
+        "FROM workspace.capstone_project.dashboard_predictions_all"
       ]
     }
   ],
@@ -2677,7 +2632,7 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "200d54f6",
+                  "datasetName": "93df88bf",
                   "fields": [
                     {
                       "name": "Total_Incidents",
@@ -2741,7 +2696,7 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "1c62f149",
+                  "datasetName": "bbf9ad77",
                   "fields": [
                     {
                       "name": "Accuracy",
@@ -2810,8 +2765,12 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "77c729de",
+                  "datasetName": "daeeba71",
                   "fields": [
+                    {
+                      "name": "City",
+                      "expression": "`City`"
+                    },
                     {
                       "name": "avg(Hazard_Ratio)",
                       "expression": "AVG(`Hazard_Ratio`)"
@@ -2819,10 +2778,6 @@
                     {
                       "name": "Feature",
                       "expression": "`Feature`"
-                    },
-                    {
-                      "name": "City",
-                      "expression": "`City`"
                     }
                   ],
                   "disaggregated": false
@@ -2853,6 +2808,11 @@
                 "showTitle": true,
                 "title": "Impact of Features on Fire Incident Delay Risk (Hazard Ratios)"
               },
+              "mark": {
+                "colors": [
+                  "#000000"
+                ]
+              },
               "widgetType": "bar",
               "encodings": {
                 "x": {
@@ -2866,8 +2826,26 @@
                   "scale": {
                     "type": "categorical",
                     "sort": {
-                      "by": "x"
+                      "by": "x-reversed"
                     }
+                  }
+                },
+                "color": {
+                  "fieldName": "City",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "NYC",
+                        "color": "#D5C943"
+                      },
+                      {
+                        "value": "Toronto",
+                        "color": {
+                          "themeColorType": "selectionColor"
+                        }
+                      }
+                    ]
                   }
                 }
               }
@@ -2887,7 +2865,7 @@
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "77c729de",
+                  "datasetName": "daeeba71",
                   "fields": [
                     {
                       "name": "Hazard_Ratio",
@@ -2947,7 +2925,11 @@
                   "fieldName": "Hazard_Ratio",
                   "displayName": "Hazard Ratio",
                   "scale": {
-                    "type": "quantitative"
+                    "type": "quantitative",
+                    "colorRamp": {
+                      "mode": "scheme",
+                      "scheme": "orangered"
+                    }
                   }
                 }
               }
