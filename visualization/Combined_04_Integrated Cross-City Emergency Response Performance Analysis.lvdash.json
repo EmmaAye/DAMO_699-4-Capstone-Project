@@ -3617,55 +3617,42 @@
       "layout": [
         {
           "widget": {
-            "name": "626c2da0",
+            "name": "da15d9a8",
             "multilineTextboxSpec": {
               "lines": [
-                "1. Analytical Contribution\n",
+                "# **Key Insights**\n",
+                "<p>&nbsp;</p>\n",
                 "\n",
-                "A short section clearly stating how this study extends traditional response-time evaluation by:\n",
+                "- <span style=\"font-size:24px\">NYC shows higher extreme delay risk despite similar averages</span>\n",
+                "<p>&nbsp;</p>\n",
                 "\n",
-                "- Emphasizing tail-risk metrics rather than averages\n",
-                "- Integrating survival analysis with statistical testing\n",
-                "- Combining predictive modeling with explainable AI\n",
-                "- Enabling structured cross-city comparison\n",
+                "- <span style=\"font-size:24px\">Delay cluster in peak hours and high-demand areas</span>\n",
+                "<p>&nbsp;</p>\n",
                 "\n",
-                "This section should explicitly differentiate the methodology from conventional descriptive approaches.\n",
+                "- <span style=\"font-size:24px\">Different Drivers: Toronto --> Spatial & Temporal, NYC --> Incident Type</span>\n",
+                "<p>&nbsp;</p>\n",
                 "\n",
-                "2. Structural Performance Differences\n",
+                "- <span style=\"font-size:24px\">Delay risk can be predicted effectively</span>\n",
+                "<p>&nbsp;</p>\n",
                 "\n",
-                "Combine:\n",
+                "# Contribution\n",
+                "<p>&nbsp;</p>\n",
                 "\n",
-                "- Cross-City Performance Summary\n",
-                "- Log-rank statistical support\n",
-                "- Central vs tail differences\n",
+                "- <span style=\"font-size: 24px;\">Tail-risk focused evaluation</span>\n",
+                "<p>&nbsp;</p>\n",
                 "\n",
-                "Everything about “which city performs differently” lives here\n",
+                "- <span style=\"font-size: 24px;\">Combined method of Descriptive, Survival, Machine Learning and SHAP</span>\n",
+                "<p>&nbsp;</p>\n",
                 "\n",
-                "3. When & Where Risk Concentrates\n",
-                "\n",
-                "Combine:\n",
-                "\n",
-                "- Temporal Risk Insights\n",
-                "- Spatial & Operational Insights\n",
-                "- Time + location are both structural context.<br>They belong together. \n",
-                "\n",
-                "4. Delay Drivers & System Interpretation\n",
-                "\n",
-                "Combine:\n",
-                "\n",
-                "- Model-based delay drivers\n",
-                "- SHAP insights\n",
-                "- Operational interpretation\n",
-                "\n",
-                "Put drivers + meaning together.This avoids separating “drivers” and “implications” artificially."
+                "- <span style=\"font-size: 24px;\">Cross-city comparative Framework</span>"
               ]
             }
           },
           "position": {
             "x": 0,
             "y": 0,
-            "width": 10,
-            "height": 13
+            "width": 12,
+            "height": 12
           }
         }
       ],
