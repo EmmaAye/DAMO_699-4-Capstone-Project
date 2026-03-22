@@ -631,10 +631,12 @@
         "    ELSE 'Actual: On-Time'\r\n",
         "  END AS Actual,\r\n",
         "  COUNT(*) AS Total_Incidents\r\n",
-        "FROM capstone_project.dashboard_predictions_all\r\n",
+        "FROM workspace.capstone_project.dashboard_predictions_all\r\n",
         "GROUP BY 1, 2\r\n",
         "ORDER BY Actual DESC, Predicted DESC"
-      ]
+      ],
+      "catalog": "workspace",
+      "schema": "capstone_project"
     },
     {
       "name": "daeeba71",
@@ -650,8 +652,10 @@
       "displayName": "Distribution of Predicted Delay Risk Probabilities",
       "queryLines": [
         "SELECT delay_risk_probability, City\r\n",
-        "FROM capstone_project.dashboard_predictions_all"
-      ]
+        "FROM workspace.capstone_project.dashboard_predictions_all"
+      ],
+      "catalog": "workspace",
+      "schema": "capstone_project"
     }
   ],
   "pages": [
