@@ -2684,30 +2684,25 @@
                     "mappings": [
                       {
                         "value": 4,
-                        "color": {
-                          "themeColorType": "fontColor"
-                        }
+                        "color": "#B6A91B"
                       },
                       {
                         "value": 6,
-                        "color": {
-                          "themeColorType": "widgetBorderColor"
-                        }
+                        "color": "#CC8D24"
                       },
                       {
                         "value": 18,
-                        "color": {
-                          "themeColorType": "canvasBackgroundColor"
-                        }
+                        "color": "#5A8C2A"
                       },
                       {
                         "value": 20,
-                        "color": {
-                          "themeColorType": "selectionColor"
-                        }
+                        "color": "#AC3418"
                       }
                     ]
                   }
+                },
+                "label": {
+                  "show": true
                 }
               }
             }
