@@ -1,0 +1,5 @@
+Model,AUC-ROC,Precision,Recall,F1-Score,Accuracy
+GBT,0.679,0.832,0.859,0.794,0.859
+Logistic Regression,0.668,0.738,0.859,0.794,0.859
+Random Forest,0.645,0.738,0.859,0.794,0.859
+Naive Majority Baseline,0.5,0.0,0.0,0.0,0.859
