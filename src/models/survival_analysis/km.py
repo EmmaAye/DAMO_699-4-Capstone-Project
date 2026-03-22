@@ -42,7 +42,10 @@ def km_overlay_plot(
     thresholds=DEFAULT_THRESHOLDS,
     title="Kaplan–Meier Survival — Cross-City",
 ):
-    plt.figure(figsize=(8, 6))
+    # For dashboard
+    plt.figure(figsize=(6, 4))
+    # For Poster
+    # plt.figure(figsize=(10, 6))
     ax = plt.gca()
 
     km_a.plot_survival_function(ax=ax, ci_show=False)
@@ -55,8 +58,9 @@ def km_overlay_plot(
     ax.set_xlim(0, censor_threshold)
     ax.set_ylim(0, 1.0)
     ax.set_xlabel("Response time (minutes)")
-    ax.set_ylabel("Probability that the unit has not arrived yet(KM estimate)")
-    ax.set_title(title)
+    ax.set_ylabel("Probability that the unit has not arrived yet")
+    # ax.set_ylabel("Survival Probability (Not Arrived)",fontweight = "bold")
+    ax.set_title(title, fontsize = 12, fontweight="bold")
     ax.grid(True, linestyle="--", linewidth=0.5)
     ax.legend()
     plt.tight_layout()
@@ -136,7 +140,7 @@ def km_plot_stratified(
     Stratified KM plotting from your stratified notebook.
     (This function only plots; testing lives in stats.py)
     """
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(6, 4))
     ax = plt.gca()
 
     if group_order is None:
@@ -156,6 +160,7 @@ def km_plot_stratified(
     ax.set_title(title)
     ax.set_xlabel("Response Time (minutes)")
     ax.set_ylabel("Probability that the unit has not arrived yet")
+    # ax.set_ylabel("Survival Probability")
     ax.set_xlim(0, censor_threshold)
     ax.set_ylim(0, 1.0)
     ax.grid(True)

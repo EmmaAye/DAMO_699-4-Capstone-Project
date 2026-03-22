@@ -1,0 +1,3765 @@
+{
+  "datasets": [
+    {
+      "name": "b82b9527",
+      "displayName": "nyc_model_ready",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.nyc_model_ready"
+      ]
+    },
+    {
+      "name": "25a85096",
+      "displayName": "toronto_model_ready",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.toronto_model_ready"
+      ]
+    },
+    {
+      "name": "ac05473d",
+      "displayName": "combined_model_ready",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.combined_model_ready\r\n",
+        "-- SELECT DISTINCT city\r\n",
+        "-- FROM workspace.capstone_project.combined_model_ready\r\n",
+        "-- ORDER BY city"
+      ],
+      "columns": [
+        {
+          "displayName": "hazard_ratio",
+          "description": "Hazard ratio for each city: compares delay_indicator (events) to event_indicator (total at-risk incidents).",
+          "expression": "TRY_DIVIDE(SUM(delay_indicator), SUM(event_indicator))"
+        },
+        {
+          "displayName": "delay_rate_percent",
+          "description": "Delay rate as a proportion of delayed incidents per city (SUM(delay_indicator) / COUNT(*))",
+          "expression": "TRY_DIVIDE(SUM(delay_indicator), COUNT(*))"
+        },
+        {
+          "displayName": "censored_incidents",
+          "description": "Number of censored incidents (response_minutes is NULL)",
+          "expression": "SUM(CASE WHEN response_minutes IS NULL THEN 1 ELSE 0 END)"
+        },
+        {
+          "displayName": "censor_rate_percent",
+          "description": "Censor rate as percent of censored incidents (SUM(CASE WHEN response_minutes IS NULL THEN 1 ELSE 0 END) / COUNT(*) * 100)",
+          "expression": "TRY_MULTIPLY(TRY_DIVIDE(SUM(CASE WHEN response_minutes IS NULL THEN 1 ELSE 0 END), COUNT(*)), 100)"
+        },
+        {
+          "displayName": "prob_exceed_8min_delay",
+          "description": "Probability to exceed 8 minute delay threshold for each city.",
+          "expression": "TRY_DIVIDE(SUM(CASE WHEN response_minutes > 8 THEN 1 ELSE 0 END), COUNT(*))"
+        }
+      ]
+    },
+    {
+      "name": "268ebafb",
+      "displayName": "Median Response Time by City",
+      "queryLines": [
+        "SELECT\n",
+        "  city,\n",
+        "  APPROX_PERCENTILE(response_minutes, 0.5) AS median_response_time\n",
+        "FROM\n",
+        "  workspace.capstone_project.combined_model_ready\n",
+        "GROUP BY\n",
+        "  city"
+      ],
+      "catalog": "workspace",
+      "schema": "capstone_project"
+    },
+    {
+      "name": "50688811",
+      "displayName": "mean_med_p90_p95",
+      "queryLines": [
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    AVG(response_minutes) AS mean_response,\r\n",
+        "    percentile_approx(response_minutes, 0.5) AS median_response,\r\n",
+        "    percentile_approx(response_minutes, 0.9) AS p90_response,\r\n",
+        "    percentile_approx(response_minutes, 0.95) AS p95_response\r\n",
+        "FROM workspace.capstone_project.combined_model_ready\r\n",
+        "GROUP BY city\r\n",
+        "ORDER BY city"
+      ]
+    },
+    {
+      "name": "213baf17",
+      "displayName": "City Incident Response Delay Summary",
+      "queryLines": [
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    COUNT(*) AS total_incidents,\r\n",
+        "    SUM(CASE WHEN response_minutes > 8 THEN 1 ELSE 0 END) AS delayed_incidents,\r\n",
+        "    SUM(CASE WHEN response_minutes > 8 THEN 1 ELSE 0 END) * 1.0 / COUNT(*) AS delay_rate\r\n",
+        "FROM workspace.capstone_project.combined_model_ready\r\n",
+        "GROUP BY city"
+      ]
+    },
+    {
+      "name": "27971290",
+      "displayName": "Complete_response_time",
+      "queryLines": [
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    FLOOR(response_minutes) AS response_bin,\r\n",
+        "    COUNT(*) AS incident_count\r\n",
+        "FROM workspace.capstone_project.combined_model_ready\r\n",
+        "WHERE response_minutes BETWEEN 0 AND 60\r\n",
+        "GROUP BY city, FLOOR(response_minutes)\r\n",
+        "ORDER BY response_bin"
+      ]
+    },
+    {
+      "name": "4deb9daa",
+      "displayName": "response_delay_pct",
+      "queryLines": [
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    AVG(CASE WHEN response_minutes > 8 THEN 1 ELSE 0 END) * 100 AS response_gt_8min_pct,\r\n",
+        "    AVG(CASE WHEN response_minutes > 10 THEN 1 ELSE 0 END) * 100 AS response_gt_10min_pct,\r\n",
+        "    AVG(CASE WHEN response_minutes > 15 THEN 1 ELSE 0 END) * 100 AS response_gt_15min_pct\r\n",
+        "FROM workspace.capstone_project.combined_model_ready\r\n",
+        "GROUP BY city"
+      ]
+    },
+    {
+      "name": "6d336bea",
+      "displayName": "SLA_breach_pct",
+      "queryLines": [
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    AVG(CASE WHEN response_minutes > 5 THEN 1 ELSE 0 END) * 100 AS response_gt_5min_pct,\r\n",
+        "    AVG(CASE WHEN response_minutes > 8 THEN 1 ELSE 0 END) * 100 AS response_gt_8min_pct\r\n",
+        "FROM workspace.capstone_project.combined_model_ready\r\n",
+        "GROUP BY city"
+      ]
+    },
+    {
+      "name": "a5fa88a6",
+      "displayName": "SLA_Breach_Long_Format",
+      "queryLines": [
+        "SELECT\n",
+        "  city,\n",
+        "  '5min' AS threshold,\n",
+        "  AVG(\n",
+        "    CASE\n",
+        "      WHEN response_minutes > 5 THEN 1\n",
+        "      ELSE 0\n",
+        "    END\n",
+        "  )AS breach_pct\n",
+        "FROM\n",
+        "  workspace.capstone_project.combined_model_ready\n",
+        "GROUP BY\n",
+        "  city\n",
+        "UNION ALL\n",
+        "SELECT\n",
+        "  city,\n",
+        "  '8min' AS threshold,\n",
+        "  AVG(\n",
+        "    CASE\n",
+        "      WHEN response_minutes > 8 THEN 1\n",
+        "      ELSE 0\n",
+        "    END\n",
+        "  )AS breach_pct\n",
+        "FROM\n",
+        "  workspace.capstone_project.combined_model_ready\n",
+        "GROUP BY\n",
+        "  city"
+      ]
+    },
+    {
+      "name": "50deb195",
+      "displayName": "Threshold_Exceedance",
+      "queryLines": [
+        "SELECT city, '8 min' AS threshold,\n",
+        "       AVG(CASE WHEN response_minutes > 8 THEN 1 ELSE 0 END) AS exceed_pct\n",
+        "FROM workspace.capstone_project.combined_model_ready\n",
+        "GROUP BY city\n",
+        "\n",
+        "UNION ALL\n",
+        "\n",
+        "SELECT city, '10 min',\n",
+        "       AVG(CASE WHEN response_minutes > 10 THEN 1 ELSE 0 END)\n",
+        "FROM workspace.capstone_project.combined_model_ready\n",
+        "GROUP BY city\n",
+        "\n",
+        "UNION ALL\n",
+        "\n",
+        "SELECT city, '15 min',\n",
+        "       AVG(CASE WHEN response_minutes > 15 THEN 1 ELSE 0 END)\n",
+        "FROM workspace.capstone_project.combined_model_ready\n",
+        "GROUP BY city"
+      ]
+    },
+    {
+      "name": "1e1abae3",
+      "displayName": "hourly_response_trend",
+      "queryLines": [
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    hour,\r\n",
+        "    AVG(response_minutes) AS avg_response,\r\n",
+        "    percentile_approx(response_minutes, 0.9) AS p90_response\r\n",
+        "FROM workspace.capstone_project.combined_model_ready\r\n",
+        "WHERE response_minutes IS NOT NULL\r\n",
+        "GROUP BY city, hour\r\n",
+        "ORDER BY city, hour"
+      ]
+    },
+    {
+      "name": "8b6e4ee3",
+      "displayName": "incident_vol_by_hour",
+      "queryLines": [
+        "WITH hourly_counts AS (\r\n",
+        "    SELECT\r\n",
+        "        city,\r\n",
+        "        DATE(incident_datetime) AS incident_date,\r\n",
+        "        hour,\r\n",
+        "        COUNT(*) AS hourly_incidents\r\n",
+        "    FROM workspace.capstone_project.combined_model_ready\r\n",
+        "    GROUP BY city, DATE(incident_datetime), hour\r\n",
+        ")\r\n",
+        "\r\n",
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    hour,\r\n",
+        "    AVG(hourly_incidents) AS avg_incident_count\r\n",
+        "FROM hourly_counts\r\n",
+        "GROUP BY city, hour\r\n",
+        "ORDER BY hour"
+      ]
+    },
+    {
+      "name": "7c713465",
+      "displayName": "hour_day_heatmap",
+      "queryLines": [
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    CASE day_of_week\r\n",
+        "        WHEN 2 THEN 'Mon'\r\n",
+        "        WHEN 3 THEN 'Tue'\r\n",
+        "        WHEN 4 THEN 'Wed'\r\n",
+        "        WHEN 5 THEN 'Thu'\r\n",
+        "        WHEN 6 THEN 'Fri'\r\n",
+        "        WHEN 7 THEN 'Sat'\r\n",
+        "        WHEN 1 THEN 'Sun'\r\n",
+        "    END AS day_name,\r\n",
+        "    CASE day_of_week\r\n",
+        "        WHEN 2 THEN 1\r\n",
+        "        WHEN 3 THEN 2\r\n",
+        "        WHEN 4 THEN 3\r\n",
+        "        WHEN 5 THEN 4\r\n",
+        "        WHEN 6 THEN 5\r\n",
+        "        WHEN 7 THEN 6\r\n",
+        "        WHEN 1 THEN 7\r\n",
+        "    END AS day_order,\r\n",
+        "    hour,\r\n",
+        "    AVG(response_minutes) AS avg_response\r\n",
+        "FROM workspace.capstone_project.combined_model_ready\r\n",
+        "WHERE response_minutes IS NOT NULL\r\n",
+        "GROUP BY\r\n",
+        "    city,\r\n",
+        "    day_of_week,\r\n",
+        "    hour\r\n",
+        "ORDER BY\r\n",
+        "    city,\r\n",
+        "    day_order,\r\n",
+        "    hour"
+      ]
+    },
+    {
+      "name": "5821d547",
+      "displayName": "weekend_vs_weekday",
+      "queryLines": [
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    CASE\r\n",
+        "        WHEN day_of_week IN (1, 7) THEN 'Weekend'\r\n",
+        "        ELSE 'Weekday'\r\n",
+        "    END AS day_type,\r\n",
+        "    percentile_approx(response_minutes, 0.9) AS p90_response\r\n",
+        "FROM workspace.capstone_project.combined_model_ready\r\n",
+        "WHERE response_minutes IS NOT NULL\r\n",
+        "GROUP BY\r\n",
+        "    city,\r\n",
+        "    CASE\r\n",
+        "        WHEN day_of_week IN (1, 7) THEN 'Weekend'\r\n",
+        "        ELSE 'Weekday'\r\n",
+        "    END\r\n",
+        "ORDER BY city, day_type"
+      ]
+    },
+    {
+      "name": "1664eecd",
+      "displayName": "p90_response_by_area",
+      "queryLines": [
+        "WITH mapped_areas AS (\r\n",
+        "    SELECT\r\n",
+        "        m.city,\r\n",
+        "        CASE\r\n",
+        "            WHEN m.city = 'Toronto' THEN COALESCE(s.WARD_NAME, CONCAT('Zone ', CAST(m.location_area AS STRING)))\r\n",
+        "            ELSE CAST(m.location_area AS STRING)\r\n",
+        "        END AS area_name,\r\n",
+        "        m.response_minutes\r\n",
+        "    FROM workspace.capstone_project.combined_model_ready m\r\n",
+        "    LEFT JOIN workspace.capstone_project.fire_station_dataset s\r\n",
+        "        ON m.city = 'Toronto'\r\n",
+        "       AND CAST(m.location_area AS STRING) = CAST(s.STATION AS STRING)\r\n",
+        "    WHERE m.response_minutes IS NOT NULL\r\n",
+        "      AND m.location_area IS NOT NULL\r\n",
+        "),\r\n",
+        "area_p90 AS (\r\n",
+        "    SELECT\r\n",
+        "        city,\r\n",
+        "        area_name,\r\n",
+        "        percentile_approx(response_minutes, 0.9) AS p90_response,\r\n",
+        "        COUNT(*) AS incident_count\r\n",
+        "    FROM mapped_areas\r\n",
+        "    GROUP BY city, area_name\r\n",
+        "    HAVING COUNT(*) >= 100\r\n",
+        "),\r\n",
+        "ranked AS (\r\n",
+        "    SELECT\r\n",
+        "        city,\r\n",
+        "        area_name,\r\n",
+        "        p90_response,\r\n",
+        "        incident_count,\r\n",
+        "        ROW_NUMBER() OVER (\r\n",
+        "            PARTITION BY city\r\n",
+        "            ORDER BY p90_response DESC\r\n",
+        "        ) AS p90_rank\r\n",
+        "    FROM area_p90\r\n",
+        ")\r\n",
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    area_name,\r\n",
+        "    p90_response,\r\n",
+        "    incident_count,\r\n",
+        "    p90_rank\r\n",
+        "FROM ranked\r\n",
+        "WHERE p90_rank <= 10\r\n",
+        "ORDER BY city, p90_rank"
+      ]
+    },
+    {
+      "name": "be1e1ab1",
+      "displayName": "fire_station_dataset",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.fire_station_dataset"
+      ]
+    },
+    {
+      "name": "c5690916",
+      "displayName": "volumne_vs_performance_by_area",
+      "queryLines": [
+        "WITH mapped_areas AS (\r\n",
+        "    SELECT\r\n",
+        "        m.city,\r\n",
+        "        CASE\r\n",
+        "            WHEN m.city = 'Toronto' THEN COALESCE(s.WARD_NAME, CONCAT('Zone ', CAST(m.location_area AS STRING)))\r\n",
+        "            ELSE CAST(m.location_area AS STRING)\r\n",
+        "        END AS area_name,\r\n",
+        "        m.response_minutes\r\n",
+        "    FROM workspace.capstone_project.combined_model_ready m\r\n",
+        "    LEFT JOIN workspace.capstone_project.fire_station_dataset s\r\n",
+        "        ON m.city = 'Toronto'\r\n",
+        "       AND CAST(m.location_area AS STRING) = CAST(s.STATION AS STRING)\r\n",
+        "    WHERE m.response_minutes IS NOT NULL\r\n",
+        "),\r\n",
+        "area_stats AS (\r\n",
+        "    SELECT\r\n",
+        "        city,\r\n",
+        "        area_name,\r\n",
+        "        COUNT(*) AS incident_count,\r\n",
+        "        AVG(response_minutes) AS avg_response,\r\n",
+        "        percentile_approx(response_minutes, 0.9) AS p90_response\r\n",
+        "    FROM mapped_areas\r\n",
+        "    GROUP BY city, area_name\r\n",
+        "    HAVING COUNT(*) >= 100\r\n",
+        ")\r\n",
+        "SELECT *\r\n",
+        "FROM area_stats"
+      ]
+    },
+    {
+      "name": "c1dd234f",
+      "displayName": "nyc_composite_tail_risk",
+      "queryLines": [
+        "WITH area_stats AS (\r\n",
+        "    SELECT\r\n",
+        "        CAST(location_area AS STRING) AS area_name,\r\n",
+        "        COUNT(*) AS incident_count,\r\n",
+        "        percentile_approx(response_minutes, 0.9) AS p90_response\r\n",
+        "    FROM workspace.capstone_project.combined_model_ready\r\n",
+        "    WHERE city = 'NYC'\r\n",
+        "      AND response_minutes IS NOT NULL\r\n",
+        "      AND location_area IS NOT NULL\r\n",
+        "    GROUP BY location_area\r\n",
+        "    HAVING COUNT(*) >= 100\r\n",
+        "),\r\n",
+        "scored AS (\r\n",
+        "    SELECT\r\n",
+        "        area_name,\r\n",
+        "        incident_count,\r\n",
+        "        p90_response,\r\n",
+        "        p90_response * SQRT(incident_count) AS risk_score\r\n",
+        "    FROM area_stats\r\n",
+        "),\r\n",
+        "ranked AS (\r\n",
+        "    SELECT\r\n",
+        "        area_name,\r\n",
+        "        incident_count,\r\n",
+        "        p90_response,\r\n",
+        "        risk_score,\r\n",
+        "        ROW_NUMBER() OVER (\r\n",
+        "            ORDER BY risk_score DESC\r\n",
+        "        ) AS risk_rank\r\n",
+        "    FROM scored\r\n",
+        ")\r\n",
+        "SELECT\r\n",
+        "    area_name,\r\n",
+        "    incident_count,\r\n",
+        "    p90_response,\r\n",
+        "    risk_score,\r\n",
+        "    risk_rank\r\n",
+        "FROM ranked\r\n",
+        "WHERE risk_rank <= 10\r\n",
+        "ORDER BY risk_rank"
+      ]
+    },
+    {
+      "name": "835dd1ed",
+      "displayName": "toronto_composite_tail_risk",
+      "queryLines": [
+        "WITH mapped_areas AS (\r\n",
+        "    SELECT\r\n",
+        "        CONCAT(\r\n",
+        "            COALESCE(s.WARD_NAME, 'Zone'),\r\n",
+        "            ' (',\r\n",
+        "            CAST(m.location_area AS STRING),\r\n",
+        "            ')'\r\n",
+        "        ) AS area_name,\r\n",
+        "        m.response_minutes\r\n",
+        "    FROM workspace.capstone_project.combined_model_ready m\r\n",
+        "    LEFT JOIN workspace.capstone_project.fire_station_dataset s\r\n",
+        "        ON CAST(m.location_area AS STRING) = CAST(s.STATION AS STRING)\r\n",
+        "    WHERE m.city = 'Toronto'\r\n",
+        "      AND m.response_minutes IS NOT NULL\r\n",
+        "      AND m.location_area IS NOT NULL\r\n",
+        "),\r\n",
+        "area_stats AS (\r\n",
+        "    SELECT\r\n",
+        "        area_name,\r\n",
+        "        COUNT(*) AS incident_count,\r\n",
+        "        percentile_approx(response_minutes, 0.9) AS p90_response\r\n",
+        "    FROM mapped_areas\r\n",
+        "    GROUP BY area_name\r\n",
+        "    HAVING COUNT(*) >= 100\r\n",
+        "),\r\n",
+        "scored AS (\r\n",
+        "    SELECT\r\n",
+        "        area_name,\r\n",
+        "        incident_count,\r\n",
+        "        p90_response,\r\n",
+        "        p90_response * SQRT(incident_count) AS risk_score\r\n",
+        "    FROM area_stats\r\n",
+        "),\r\n",
+        "ranked AS (\r\n",
+        "    SELECT\r\n",
+        "        area_name,\r\n",
+        "        incident_count,\r\n",
+        "        p90_response,\r\n",
+        "        risk_score,\r\n",
+        "        ROW_NUMBER() OVER (\r\n",
+        "            ORDER BY risk_score DESC\r\n",
+        "        ) AS risk_rank\r\n",
+        "    FROM scored\r\n",
+        ")\r\n",
+        "SELECT\r\n",
+        "    area_name,\r\n",
+        "    incident_count,\r\n",
+        "    p90_response,\r\n",
+        "    risk_score,\r\n",
+        "    risk_rank\r\n",
+        "FROM ranked\r\n",
+        "WHERE risk_rank <= 10\r\n",
+        "ORDER BY risk_rank"
+      ]
+    },
+    {
+      "name": "7c309823",
+      "displayName": "top_5_call_types",
+      "queryLines": [
+        "WITH call_stats AS (\r\n",
+        "    SELECT\r\n",
+        "        city,\r\n",
+        "        unified_call_source,\r\n",
+        "        COUNT(*) AS incident_count,\r\n",
+        "        percentile_approx(response_minutes, 0.9) AS p90_response\r\n",
+        "    FROM workspace.capstone_project.combined_model_ready\r\n",
+        "    WHERE response_minutes IS NOT NULL\r\n",
+        "      AND unified_call_source IS NOT NULL\r\n",
+        "    GROUP BY city, unified_call_source\r\n",
+        "),\r\n",
+        "top_calls AS (\r\n",
+        "    SELECT\r\n",
+        "        *,\r\n",
+        "        ROW_NUMBER() OVER (\r\n",
+        "            PARTITION BY city\r\n",
+        "            ORDER BY incident_count DESC\r\n",
+        "        ) AS rank\r\n",
+        "    FROM call_stats\r\n",
+        ")\r\n",
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    unified_call_source,\r\n",
+        "    incident_count,\r\n",
+        "    p90_response\r\n",
+        "FROM top_calls\r\n",
+        "WHERE rank <= 5\r\n",
+        "ORDER BY city, rank"
+      ]
+    },
+    {
+      "name": "5949791b",
+      "displayName": "City Call Source Interaction Counts Summary",
+      "queryLines": [
+        "SELECT\r\n",
+        "    city,\r\n",
+        "    unified_call_source,\r\n",
+        "    COUNT(*)\r\n",
+        "FROM workspace.capstone_project.combined_model_ready\r\n",
+        "GROUP BY city, unified_call_source\r\n",
+        "ORDER BY city, COUNT(*) DESC"
+      ]
+    },
+    {
+      "name": "25e99333",
+      "displayName": "cross_city_feature_imp_query",
+      "queryLines": [
+        "SELECT \n",
+        "  feature,\n",
+        "  toronto_mean_abs_shap AS mean_shap,\n",
+        "  'Toronto' AS city\n",
+        "FROM workspace.capstone_project.cross_city_shap\n",
+        "\n",
+        "UNION ALL\n",
+        "\n",
+        "SELECT \n",
+        "  feature,\n",
+        "  nyc_mean_abs_shap AS mean_shap,\n",
+        "  'NYC' AS city\n",
+        "FROM workspace.capstone_project.cross_city_shap"
+      ],
+      "catalog": "workspace",
+      "schema": "capstone_project"
+    },
+    {
+      "name": "84f96b79",
+      "displayName": "cross_city_dependency_hour_query",
+      "queryLines": [
+        "SELECT \n",
+        "   city,\n",
+        "  feature_value AS hour,\n",
+        "  shap_value\n",
+        "FROM workspace.capstone_project.cross_city_dependency"
+      ]
+    },
+    {
+      "name": "82b0fb4d",
+      "displayName": "cross_city_shap",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.cross_city_shap"
+      ]
+    },
+    {
+      "name": "8291e7ff",
+      "displayName": "cross_city_dependency",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.cross_city_dependency"
+      ]
+    },
+    {
+      "name": "15757c5f",
+      "displayName": "cox_nyc_hr",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.cox_nyc_hr"
+      ],
+      "catalog": "workspace",
+      "schema": "capstone_project"
+    },
+    {
+      "name": "f52c2071",
+      "displayName": "cox_toronto_hr",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.cox_toronto_hr"
+      ],
+      "catalog": "workspace",
+      "schema": "capstone_project"
+    },
+    {
+      "name": "7da26c8f",
+      "displayName": "cox_hr_comparison",
+      "queryLines": [
+        "SELECT feature, 'Toronto' AS city, hr_toronto AS hr\r\n",
+        "FROM (\r\n",
+        "  SELECT\r\n",
+        "    t.feature,\r\n",
+        "    CAST(t.hr AS DOUBLE) AS hr_toronto,\r\n",
+        "    CAST(n.hr AS DOUBLE) AS hr_nyc,\r\n",
+        "    CAST(t.ci_lower AS DOUBLE) AS ci_lower_toronto,\r\n",
+        "    CAST(t.ci_upper AS DOUBLE) AS ci_upper_toronto,\r\n",
+        "    CAST(n.ci_lower AS DOUBLE) AS ci_lower_nyc,\r\n",
+        "    CAST(n.ci_upper AS DOUBLE) AS ci_upper_nyc,\r\n",
+        "    CAST(t.rank AS INT) AS toronto_rank,\r\n",
+        "    CAST(n.rank AS INT) AS nyc_rank\r\n",
+        "  FROM workspace.capstone_project.cox_toronto_hr t\r\n",
+        "  JOIN workspace.capstone_project.cox_nyc_hr n\r\n",
+        "    ON TRIM(t.feature) = TRIM(n.feature)\r\n",
+        ")\r\n",
+        "\r\n",
+        "UNION ALL\r\n",
+        "\r\n",
+        "SELECT feature, 'NYC' AS city, hr_nyc AS hr\r\n",
+        "FROM (\r\n",
+        "  SELECT\r\n",
+        "    t.feature,\r\n",
+        "    CAST(t.hr AS DOUBLE) AS hr_toronto,\r\n",
+        "    CAST(n.hr AS DOUBLE) AS hr_nyc,\r\n",
+        "    CAST(t.ci_lower AS DOUBLE) AS ci_lower_toronto,\r\n",
+        "    CAST(t.ci_upper AS DOUBLE) AS ci_upper_toronto,\r\n",
+        "    CAST(n.ci_lower AS DOUBLE) AS ci_lower_nyc,\r\n",
+        "    CAST(n.ci_upper AS DOUBLE) AS ci_upper_nyc,\r\n",
+        "    CAST(t.rank AS INT) AS toronto_rank,\r\n",
+        "    CAST(n.rank AS INT) AS nyc_rank\r\n",
+        "  FROM workspace.capstone_project.cox_toronto_hr t\r\n",
+        "  JOIN workspace.capstone_project.cox_nyc_hr n\r\n",
+        "    ON TRIM(t.feature) = TRIM(n.feature)\r\n",
+        ")"
+      ],
+      "catalog": "workspace",
+      "schema": "capstone_project"
+    },
+    {
+      "name": "97f23d86",
+      "displayName": "cox_survival_summary",
+      "queryLines": [
+        "SELECT * FROM workspace.capstone_project.cox_survival_summary"
+      ],
+      "catalog": "workspace",
+      "schema": "capstone_project"
+    },
+    {
+      "name": "0b4a1a86",
+      "displayName": "survival_delay_summary",
+      "queryLines": [
+        "SELECT\r\n",
+        "  city AS City,\r\n",
+        "\r\n",
+        "  ROUND(median_survival_min, 2) AS `Median (min)`,\r\n",
+        "\r\n",
+        "  ROUND(`S(5m)` * 100, 1)  AS `S(5 min) %`,\r\n",
+        "  ROUND(`S(10m)` * 100, 1) AS `S(10 min) %`\r\n",
+        "\r\n",
+        "FROM workspace.capstone_project.cox_survival_summary\r\n",
+        "WHERE city IN ('Toronto', 'NYC');"
+      ]
+    },
+    {
+      "name": "1c62f149",
+      "displayName": "Model Performance Table",
+      "queryLines": [
+        "SELECT \n",
+        "  Model_Name,\n",
+        "  COALESCE(CAST(Accuracy AS STRING), '-') AS Accuracy,\n",
+        "  COALESCE(CAST(F1_Score AS STRING), '-') AS F1_Score,\n",
+        "  COALESCE(CAST(AUC_ROC AS STRING), '-') AS AUC_ROC,\n",
+        "  City\n",
+        "FROM capstone_project.dashboard_metrics"
+      ]
+    },
+    {
+      "name": "200d54f6",
+      "displayName": "Confusion Matrix Query",
+      "queryLines": [
+        "SELECT \n",
+        "  CASE WHEN delay_risk_probability >= 0.14 THEN 'Predicted: High Risk' \n",
+        "       ELSE 'Predicted: Low Risk' END AS Predicted, 'Actual: On-Time' AS Actual, COUNT(*) AS Total_Incidents\n",
+        "FROM capstone_project.dashboard_predictions_all\n",
+        "GROUP BY 1, 2\n",
+        "ORDER BY 1, 2"
+      ]
+    },
+    {
+      "name": "77c729de",
+      "displayName": "Feature Importance Chart",
+      "queryLines": [
+        "SELECT Feature, Hazard_Ratio \n",
+        "FROM capstone_project.dashboard_hazard_ratios\n",
+        "ORDER BY Hazard_Ratio ASC"
+      ]
+    },
+    {
+      "name": "f7187b31",
+      "displayName": "Risk Distribution Histogram",
+      "queryLines": [
+        "SELECT delay_risk_probability \n",
+        "FROM capstone_project.dashboard_predictions_all"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "f239ed96",
+      "displayName": "Executive Overview",
+      "layout": [
+        {
+          "widget": {
+            "name": "nyc-fire-incident-counts",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ac05473d",
+                  "fields": [
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` ILIKE '%nyc%'"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "NYC Fire Incident Counts"
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "count(*)"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "6015a2a9",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ac05473d",
+                  "fields": [
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` ILIKE '%toronto%'"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Toronto Fire Incident Counts"
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "count(*)"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 2,
+            "width": 2,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "7ceb241a",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<span style=\"text-align:center;display:block\"><span style=\"font-size: 48px;line-height: 1.5;color: #FFAB00;\">**Executive Overview**</span></span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 10,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "data-summary",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "50688811",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "mean_response",
+                      "expression": "`mean_response`"
+                    },
+                    {
+                      "name": "median_response",
+                      "expression": "`median_response`"
+                    },
+                    {
+                      "name": "p90_response",
+                      "expression": "`p90_response`"
+                    },
+                    {
+                      "name": "p95_response",
+                      "expression": "`p95_response`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "city"
+                  },
+                  {
+                    "fieldName": "mean_response"
+                  },
+                  {
+                    "fieldName": "median_response"
+                  },
+                  {
+                    "fieldName": "p90_response"
+                  },
+                  {
+                    "fieldName": "p95_response"
+                  }
+                ]
+              },
+              "frame": {
+                "showDescription": false,
+                "title": "Data Summary",
+                "showTitle": true
+              },
+              "rowsPerPage": 25,
+              "displayRowNumbers": false
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 2,
+            "width": 6,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "fa4edd41",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ac05473d",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "measure(delay_rate_percent)",
+                      "expression": "MEASURE(`delay_rate_percent`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Delay Rate Comparison (NYC vs Toronto)",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "city",
+                  "displayName": "City",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "natural-order"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(delay_rate_percent)",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "exact",
+                      "places": 2
+                    }
+                  },
+                  "displayName": "Delay Rate (%)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "city",
+                  "legend": {
+                    "position": "right"
+                  },
+                  "displayName": "City",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "Toronto",
+                        "color": {
+                          "themeColorType": "selectionColor"
+                        }
+                      },
+                      {
+                        "value": "NYC",
+                        "color": "#D5C943"
+                      }
+                    ]
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 4,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "e6530733",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ac05473d",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    },
+                    {
+                      "name": "measure(censored_incidents)",
+                      "expression": "MEASURE(`censored_incidents`)"
+                    },
+                    {
+                      "name": "measure(censor_rate_percent)",
+                      "expression": "MEASURE(`censor_rate_percent`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "rowsPerPage": 25,
+              "frame": {
+                "title": "Censoring Comparison Table",
+                "showTitle": true,
+                "headerAlignment": "left"
+              },
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "city",
+                    "displayName": "City"
+                  },
+                  {
+                    "fieldName": "count(*)",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "displayName": "Total Incidents"
+                  },
+                  {
+                    "fieldName": "measure(censored_incidents)",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "displayName": "Censored Incidents",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operand": {
+                              "type": "data-value",
+                              "value": "0"
+                            },
+                            "operator": ">"
+                          },
+                          "backgroundColor": "#ffefd5",
+                          "foregroundColor": "#d2691e",
+                          "bold": true
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "measure(censor_rate_percent)",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 2
+                      },
+                      "hideGroupSeparator": true
+                    },
+                    "displayName": "Censor Rate (%)",
+                    "formatTemplate": "{{ @formatted }}%",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operand": {
+                              "type": "data-value",
+                              "value": "0.01"
+                            },
+                            "operator": ">="
+                          },
+                          "backgroundColor": "#ffdcdc",
+                          "foregroundColor": "#5d0000"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 5,
+            "width": 6,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "year-filter",
+            "queries": [
+              {
+                "name": "dashboards/01f1170b58b61f838c4dbff1448f9be1/datasets/01f1217f2c8f180eb7bf7ac267b530c4_year",
+                "query": {
+                  "datasetName": "ac05473d",
+                  "fields": [
+                    {
+                      "name": "year",
+                      "expression": "`year`"
+                    },
+                    {
+                      "name": "year_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Year Filter",
+                "showTitle": true
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "year",
+                    "queryName": "dashboards/01f1170b58b61f838c4dbff1448f9be1/datasets/01f1217f2c8f180eb7bf7ac267b530c4_year"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 7,
+            "y": 8,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "month-filter",
+            "queries": [
+              {
+                "name": "dashboards/01f1170b58b61f838c4dbff1448f9be1/datasets/01f1217f2c8f180eb7bf7ac267b530c4_month",
+                "query": {
+                  "datasetName": "ac05473d",
+                  "fields": [
+                    {
+                      "name": "month",
+                      "expression": "`month`"
+                    },
+                    {
+                      "name": "month_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Month Filter",
+                "showTitle": true
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "month",
+                    "queryName": "dashboards/01f1170b58b61f838c4dbff1448f9be1/datasets/01f1217f2c8f180eb7bf7ac267b530c4_month"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 8,
+            "width": 3,
+            "height": 1
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "529ef8a1",
+      "displayName": "Response Time & Tail Risk",
+      "layout": [
+        {
+          "widget": {
+            "name": "nyc-response-time-distribution",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "27971290",
+                  "fields": [
+                    {
+                      "name": "response_bin",
+                      "expression": "`response_bin`"
+                    },
+                    {
+                      "name": "sum(incident_count)",
+                      "expression": "SUM(`incident_count`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` IN ('NYC')"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "NYC Reponse Time Distribution"
+              },
+              "mark": {
+                "colors": [
+                  "#8AEFFF"
+                ]
+              },
+              "widgetType": "histogram",
+              "encodings": {
+                "x": {
+                  "fieldName": "response_bin",
+                  "scale": {
+                    "type": "quantitative",
+                    "domain": {
+                      "min": 0,
+                      "max": 30
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(incident_count)",
+                  "displayName": "Incident Count",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "toronto-response-time-distribution",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "27971290",
+                  "fields": [
+                    {
+                      "name": "response_bin",
+                      "expression": "`response_bin`"
+                    },
+                    {
+                      "name": "sum(incident_count)",
+                      "expression": "SUM(`incident_count`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` ILIKE '%toronto%'"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Toronto Response Time Distribution"
+              },
+              "mark": {
+                "colors": [
+                  "#8AEFFF"
+                ]
+              },
+              "widgetType": "histogram",
+              "encodings": {
+                "x": {
+                  "fieldName": "response_bin",
+                  "scale": {
+                    "type": "quantitative",
+                    "domain": {
+                      "min": 0,
+                      "max": 30
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(incident_count)",
+                  "displayName": "Incident Count",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 1,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "91a4bcf2",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "a5fa88a6",
+                  "fields": [
+                    {
+                      "name": "threshold",
+                      "expression": "`threshold`"
+                    },
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "breach_pct",
+                      "expression": "`breach_pct`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "SLA Breach Comparison ( >5min & >8min)",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "city",
+                  "displayName": "City",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "natural-order"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "breach_pct",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "exact",
+                      "places": 1
+                    }
+                  },
+                  "displayName": "SLA Breach (%)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "threshold",
+                  "legend": {
+                    "position": "right"
+                  },
+                  "displayName": "Threshold",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "5min",
+                        "color": "#DDDF77"
+                      },
+                      {
+                        "value": "8min",
+                        "color": "#A9581B"
+                      }
+                    ]
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 4,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "9df29aa2",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<span style=\"text-align:center;display:block;\"><span style=\"font-size: 24px;color: #FFAB00;\">**Response Time & Tail Risk**</span></span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "b8989728",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "50deb195",
+                  "fields": [
+                    {
+                      "name": "threshold",
+                      "expression": "`threshold`"
+                    },
+                    {
+                      "name": "exceed_pct",
+                      "expression": "`exceed_pct`"
+                    },
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "facet": {
+                "type": "wrap",
+                "fieldName": "city",
+                "scale": {
+                  "type": "categorical"
+                }
+              },
+              "version": 3,
+              "frame": {
+                "title": "Extreme Delay Probability by Threshold",
+                "showTitle": true
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "threshold",
+                  "displayName": "City",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "exceed_pct",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "exact",
+                      "places": 2
+                    }
+                  },
+                  "displayName": "Exceedance %",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "threshold",
+                  "legend": {
+                    "position": "right"
+                  },
+                  "displayName": "Threshold",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "8 min",
+                        "color": "#B1AD52"
+                      },
+                      {
+                        "value": "15 min",
+                        "color": "#C98B45"
+                      },
+                      {
+                        "value": "10 min",
+                        "color": "#AE5737"
+                      }
+                    ],
+                    "sort": {
+                      "by": "custom-order",
+                      "orderedValues": [
+                        "8 min",
+                        "10 min",
+                        "15 min"
+                      ]
+                    }
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 6,
+            "width": 8,
+            "height": 5
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "ecb986f5",
+      "displayName": "Temporal Patterns",
+      "layout": [
+        {
+          "widget": {
+            "name": "f005d86a",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<span style=\"text-align:center;display:block\"><span style=\"font-size: 24px;color: #FFAB00;\">**Temporal Patterns**</span></span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "hourly-average-response-trend-toronto-vs-nyc",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "1e1abae3",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "hour",
+                      "expression": "`hour`"
+                    },
+                    {
+                      "name": "avg_response",
+                      "expression": "`avg_response`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showDescription": false,
+                "showTitle": true,
+                "title": "Hourly Average Response Trend (Toronto vs NYC)"
+              },
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "hour",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg_response",
+                  "displayName": "Response Time (min)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "city",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "NYC",
+                        "color": "#D9A249"
+                      },
+                      {
+                        "value": "Toronto",
+                        "color": "#57D736"
+                      }
+                    ]
+                  }
+                },
+                "label": {
+                  "show": true,
+                  "display": {
+                    "type": "y-min-and-max"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "362fcf60",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "1e1abae3",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "hour",
+                      "expression": "`hour`"
+                    },
+                    {
+                      "name": "p90_response",
+                      "expression": "`p90_response`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showDescription": false,
+                "showTitle": true,
+                "title": "Hourly P90 Response Trend (Toronto vs NYC)"
+              },
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "hour",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "p90_response",
+                  "displayName": "Response Time (min)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "city",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "NYC",
+                        "color": "#D9A249"
+                      },
+                      {
+                        "value": "Toronto",
+                        "color": "#57D736"
+                      }
+                    ]
+                  }
+                },
+                "label": {
+                  "show": true,
+                  "display": {
+                    "type": "y-min-and-max"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 1,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "incident-volume-by-hour",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "8b6e4ee3",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "hour",
+                      "expression": "`hour`"
+                    },
+                    {
+                      "name": "avg_incident_count",
+                      "expression": "`avg_incident_count`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "facet": {
+                "type": "wrap",
+                "fieldName": "city",
+                "layout": {
+                  "row": {
+                    "type": "count",
+                    "value": 3
+                  }
+                },
+                "displayName": "Average Incident Volume by Hour (NYC vs Toronto)",
+                "scale": {
+                  "type": "categorical"
+                }
+              },
+              "version": 3,
+              "frame": {
+                "title": "Average Incident Volume by Hour",
+                "showTitle": false
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "hour",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg_incident_count",
+                  "displayName": "Incident Count",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "city",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "NYC",
+                        "color": "#D5C943"
+                      },
+                      {
+                        "value": "Toronto",
+                        "color": {
+                          "themeColorType": "selectionColor"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 7,
+            "width": 7,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "average-response-time-heatmap-hour-x-day",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "7c713465",
+                  "fields": [
+                    {
+                      "name": "avg_response",
+                      "expression": "`avg_response`"
+                    },
+                    {
+                      "name": "hour",
+                      "expression": "`hour`"
+                    },
+                    {
+                      "name": "day_name",
+                      "expression": "`day_name`"
+                    },
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "facet": {
+                "type": "wrap",
+                "fieldName": "city",
+                "displayName": "Average Response Time Heatmap (Hour x Day)",
+                "scale": {
+                  "type": "categorical"
+                }
+              },
+              "version": 3,
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "selectionColor"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": false,
+                "title": ""
+              },
+              "widgetType": "heatmap",
+              "encodings": {
+                "x": {
+                  "fieldName": "hour",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "day_name",
+                  "displayName": "Day",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "color": {
+                  "fieldName": "avg_response",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  },
+                  "legend": {
+                    "position": "right"
+                  },
+                  "displayName": "Response Time",
+                  "scale": {
+                    "type": "quantitative",
+                    "colorRamp": {
+                      "mode": "scheme",
+                      "scheme": "redyellowblue"
+                    },
+                    "reverse": true
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 13,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "weekday-weekend-response-time-toronto-nyc-overlay",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "5821d547",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "day_type",
+                      "expression": "`day_type`"
+                    },
+                    {
+                      "name": "p90_response",
+                      "expression": "`p90_response`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "facet": {
+                "type": "wrap",
+                "fieldName": "city",
+                "layout": {
+                  "row": {
+                    "type": "count",
+                    "value": 4
+                  }
+                },
+                "displayName": "Weekday vs Weekend P90 Response Time",
+                "scale": {
+                  "type": "categorical"
+                }
+              },
+              "version": 3,
+              "frame": {
+                "title": "Weekday vs Weekends P90 Response Time  for Toronto and NYC",
+                "showTitle": false
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "selectionColor"
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "day_type",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "p90_response",
+                  "displayName": "Response Time",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "city",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "NYC",
+                        "color": "#D5C943"
+                      },
+                      {
+                        "value": "Toronto",
+                        "color": {
+                          "themeColorType": "selectionColor"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 7,
+            "y": 7,
+            "width": 5,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "6a6423a0",
+      "displayName": "Spatial & Operational Signals",
+      "layout": [
+        {
+          "widget": {
+            "name": "a2c0978f",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<span style=\"text-align:center;display:block\"><span style=\"color:#FFAB00;font-size:24px\">**Spatial & Operation Signals**</span></span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "001999c7",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "1664eecd",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "p90_response",
+                      "expression": "`p90_response`"
+                    },
+                    {
+                      "name": "area_name",
+                      "expression": "`area_name`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "facet": {
+                "type": "wrap",
+                "fieldName": "city",
+                "displayName": "Top Areas by P90 Response Time",
+                "scale": {
+                  "type": "categorical"
+                }
+              },
+              "version": 3,
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "selectionColor"
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "p90_response",
+                  "displayName": "Response Time (min)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "area_name",
+                  "displayName": "Location Area",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  }
+                },
+                "color": {
+                  "fieldName": "city",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "NYC",
+                        "color": "#D5C943"
+                      },
+                      {
+                        "value": "Toronto",
+                        "color": {
+                          "themeColorType": "selectionColor"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "nyc-volume-vs",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "c5690916",
+                  "fields": [
+                    {
+                      "name": "area_name",
+                      "expression": "`area_name`"
+                    },
+                    {
+                      "name": "incident_count",
+                      "expression": "`incident_count`"
+                    },
+                    {
+                      "name": "p90_response",
+                      "expression": "`p90_response`"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` IN ('NYC')"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "NYC Volumne Vs Delay Risk for P90 Response Time"
+              },
+              "mark": {
+                "colors": [
+                  "#DDD715"
+                ],
+                "size": -1.3
+              },
+              "widgetType": "scatter",
+              "encodings": {
+                "x": {
+                  "fieldName": "incident_count",
+                  "displayName": "Incident Volumne (Count)",
+                  "scale": {
+                    "type": "quantitative",
+                    "domain": {
+                      "min": 10000
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "p90_response",
+                  "displayName": "Response Time (min)",
+                  "scale": {
+                    "type": "quantitative",
+                    "domain": {
+                      "min": 7
+                    }
+                  }
+                },
+                "size": {
+                  "fieldName": "incident_count",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "extra": [
+                  {
+                    "fieldName": "area_name"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 7,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "toronto-volume-vs-performance-p90-response-time",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "c5690916",
+                  "fields": [
+                    {
+                      "name": "area_name",
+                      "expression": "`area_name`"
+                    },
+                    {
+                      "name": "incident_count",
+                      "expression": "`incident_count`"
+                    },
+                    {
+                      "name": "p90_response",
+                      "expression": "`p90_response`"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` IN ('Toronto')"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Toronto Volumne Vs Delay Risk for P90 Response Time"
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "selectionColor"
+                  }
+                ],
+                "size": -1.4
+              },
+              "widgetType": "scatter",
+              "encodings": {
+                "x": {
+                  "fieldName": "incident_count",
+                  "displayName": "Incident Volume (Count)",
+                  "scale": {
+                    "type": "quantitative",
+                    "domain": {
+                      "max": 45000
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "p90_response",
+                  "displayName": "Response TIme (min)",
+                  "scale": {
+                    "type": "quantitative",
+                    "domain": {
+                      "min": 6
+                    }
+                  }
+                },
+                "size": {
+                  "fieldName": "incident_count",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "extra": [
+                  {
+                    "fieldName": "area_name"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 7,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "nyc-top-high-risk-areas-composite-tail-risk",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "c1dd234f",
+                  "fields": [
+                    {
+                      "name": "risk_rank",
+                      "expression": "`risk_rank`"
+                    },
+                    {
+                      "name": "area_name",
+                      "expression": "`area_name`"
+                    },
+                    {
+                      "name": "incident_count",
+                      "expression": "`incident_count`"
+                    },
+                    {
+                      "name": "p90_response",
+                      "expression": "`p90_response`"
+                    },
+                    {
+                      "name": "risk_score",
+                      "expression": "`risk_score`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "headerHeight": 34,
+              "freezeUpToColumnNumber": 1,
+              "frame": {
+                "showTitle": true,
+                "showDescription": true,
+                "description": "Composite Tail Risk Score = P90 Response Time × √(Incident Count)",
+                "title": "NYC Top High-Risk Areas (Composite Tail Risk)"
+              },
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "risk_rank",
+                    "contentAlignment": "center"
+                  },
+                  {
+                    "fieldName": "area_name"
+                  },
+                  {
+                    "fieldName": "incident_count",
+                    "contentAlignment": "right",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "displayName": "Incident Count"
+                  },
+                  {
+                    "fieldName": "p90_response"
+                  },
+                  {
+                    "fieldName": "risk_score",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 2
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "style": {
+                      "type": "basic"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 13,
+            "width": 7,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "toronto-top-high-risk-areas-composite-tail-risk",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "835dd1ed",
+                  "fields": [
+                    {
+                      "name": "risk_rank",
+                      "expression": "`risk_rank`"
+                    },
+                    {
+                      "name": "area_name",
+                      "expression": "`area_name`"
+                    },
+                    {
+                      "name": "incident_count",
+                      "expression": "`incident_count`"
+                    },
+                    {
+                      "name": "p90_response",
+                      "expression": "`p90_response`"
+                    },
+                    {
+                      "name": "risk_score",
+                      "expression": "`risk_score`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Toronto Top High-Risk Areas (Composite Tail Risk)"
+              },
+              "freezeUpToColumnNumber": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "risk_rank",
+                    "contentAlignment": "center"
+                  },
+                  {
+                    "fieldName": "area_name"
+                  },
+                  {
+                    "fieldName": "incident_count",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "displayName": "Incident Count"
+                  },
+                  {
+                    "fieldName": "p90_response"
+                  },
+                  {
+                    "fieldName": "risk_score",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 2
+                      },
+                      "hideGroupSeparator": false
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 18,
+            "width": 7,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "6b4a7af5",
+            "multilineTextboxSpec": {
+              "lines": [
+                "The composite tail risk table identifies priority areas where high demand and elevated response times coincide. These areas represent the most critical targets for operational improvement within each city.\n",
+                "\n",
+                "High delay × High volume = High operational risk.  Therefore, it was calculated as:\n",
+                "\n",
+                "***Composite Tail Risk Score = P90 Response Time × √(Incident Count)***\n",
+                "\n",
+                "The square root is used to reduce the dominance of very high-volume areas while still accounting for demand."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 23,
+            "width": 12,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "nyc-top-5-p90-response-time-call-type",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "7c309823",
+                  "fields": [
+                    {
+                      "name": "p90_response",
+                      "expression": "`p90_response`"
+                    },
+                    {
+                      "name": "unified_call_source",
+                      "expression": "`unified_call_source`"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` IN ('NYC')"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "NYC P90 Response Time by Call Type"
+              },
+              "mark": {
+                "colors": [
+                  "#D5C943"
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "p90_response",
+                  "displayName": "Response Time (min)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "unified_call_source",
+                  "displayName": "Call Type",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 7,
+            "y": 13,
+            "width": 5,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "toronto-p90-response-time-call-type",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "7c309823",
+                  "fields": [
+                    {
+                      "name": "p90_response",
+                      "expression": "`p90_response`"
+                    },
+                    {
+                      "name": "unified_call_source",
+                      "expression": "`unified_call_source`"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` IN ('Toronto')"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Toronto P90 Response Time by Call Type"
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "selectionColor"
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "p90_response",
+                  "displayName": "Response Time (min)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "unified_call_source",
+                  "displayName": "Call Type",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 7,
+            "y": 18,
+            "width": 5,
+            "height": 5
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "c93f94f5",
+      "displayName": "Predictive Modeling",
+      "layout": [
+        {
+          "widget": {
+            "name": "57529707",
+            "multilineTextboxSpec": {
+              "lines": [
+                "- Model performance table (Accuracy, F1, AUC)\n",
+                "- Confusion matrix\n",
+                "- Feature importance chart \n",
+                "- Risk distribution histogram (add only if it adds something unique.)"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 26,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "bd14ada7",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "200d54f6",
+                  "fields": [
+                    {
+                      "name": "Total_Incidents",
+                      "expression": "`Total_Incidents`"
+                    },
+                    {
+                      "name": "Predicted",
+                      "expression": "`Predicted`"
+                    },
+                    {
+                      "name": "Actual",
+                      "expression": "`Actual`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showDescription": true,
+                "description": ""
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "Predicted",
+                  "axis": {
+                    "title": "Model Prediction Classifier"
+                  },
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "Actual",
+                  "axis": {
+                    "title": "Actual (Historical Data)"
+                  },
+                  "displayName": "Actual Outcome",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "custom-order",
+                      "orderedValues": [
+                        "Actual: On-Time"
+                      ]
+                    }
+                  }
+                },
+                "color": {
+                  "fieldName": "Total_Incidents",
+                  "scale": {
+                    "type": "quantitative",
+                    "colorRamp": {
+                      "mode": "scheme",
+                      "scheme": "greenblue"
+                    }
+                  }
+                },
+                "label": {
+                  "show": false
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 12,
+            "height": 7
+          }
+        },
+        {
+          "widget": {
+            "name": "4fcca504",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "1c62f149",
+                  "fields": [
+                    {
+                      "name": "Accuracy",
+                      "expression": "`Accuracy`"
+                    },
+                    {
+                      "name": "F1_Score",
+                      "expression": "`F1_Score`"
+                    },
+                    {
+                      "name": "AUC_ROC",
+                      "expression": "`AUC_ROC`"
+                    },
+                    {
+                      "name": "Model_Name",
+                      "expression": "`Model_Name`"
+                    },
+                    {
+                      "name": "City",
+                      "expression": "`City`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "Accuracy"
+                  },
+                  {
+                    "fieldName": "F1_Score"
+                  },
+                  {
+                    "fieldName": "AUC_ROC"
+                  },
+                  {
+                    "fieldName": "Model_Name"
+                  },
+                  {
+                    "fieldName": "City"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 12,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "5bfb50d6",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "77c729de",
+                  "fields": [
+                    {
+                      "name": "avg(Hazard_Ratio)",
+                      "expression": "AVG(`Hazard_Ratio`)"
+                    },
+                    {
+                      "name": "Feature",
+                      "expression": "`Feature`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "annotations": [
+                {
+                  "type": "vertical-line",
+                  "encodings": {
+                    "x": {
+                      "dataValue": "1",
+                      "dataType": "DOUBLE"
+                    }
+                  }
+                }
+              ],
+              "mark": {
+                "colors": [
+                  "#48C7D3"
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "avg(Hazard_Ratio)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "Feature",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "9efac4e8",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "77c729de",
+                  "fields": [
+                    {
+                      "name": "Hazard_Ratio",
+                      "expression": "`Hazard_Ratio`"
+                    },
+                    {
+                      "name": "Feature",
+                      "expression": "`Feature`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "Top Features by Hazard Ratio",
+                "showTitle": true,
+                "showDescription": true,
+                "description": ""
+              },
+              "widgetType": "histogram",
+              "encodings": {
+                "x": {
+                  "fieldName": "Feature",
+                  "axis": {
+                    "title": "Predicted Delay Probability (0 to 1)"
+                  },
+                  "displayName": "Feature",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "Hazard_Ratio",
+                  "axis": {
+                    "title": "Number of Incidents"
+                  },
+                  "displayName": "Hazard Ratio",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "Hazard_Ratio",
+                  "displayName": "Hazard Ratio",
+                  "scale": {
+                    "type": "quantitative",
+                    "colorRamp": {
+                      "mode": "scheme",
+                      "scheme": "greenblue"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 17,
+            "width": 12,
+            "height": 9
+          }
+        },
+        {
+          "widget": {
+            "name": "a5f11f75",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<span style=\"text-align:center;display:block;\"><span style=\"font-size: 24px;color: #FFAB00;\">**Predictive Modeling**</span></span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 1
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "1810e10e",
+      "displayName": "Explainability (SHAP)",
+      "layout": [
+        {
+          "widget": {
+            "name": "baba9ebe",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<span style=\"text-align:center;display:block\"><span style=\"font-size: 24px;color: #FFAB00;\">Shapley Explainability</span></span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "shap-feature-importance",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "25e99333",
+                  "fields": [
+                    {
+                      "name": "avg(mean_shap)",
+                      "expression": "AVG(`mean_shap`)"
+                    },
+                    {
+                      "name": "feature",
+                      "expression": "`feature`"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` IN ('NYC')"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "SHAP Feature Importance -  NYC"
+              },
+              "mark": {
+                "colors": [
+                  "#D5C943",
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "avg(mean_shap)",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  },
+                  "axis": {
+                    "hideGrid": false,
+                    "hideLabels": false
+                  },
+                  "displayName": "Avg Mean Shap",
+                  "scale": {
+                    "type": "quantitative",
+                    "reverse": false
+                  }
+                },
+                "y": {
+                  "fieldName": "feature",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "shap-feature-importance-nyc-1",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "25e99333",
+                  "fields": [
+                    {
+                      "name": "avg(mean_shap)",
+                      "expression": "AVG(`mean_shap`)"
+                    },
+                    {
+                      "name": "feature",
+                      "expression": "`feature`"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`city` IN ('Toronto')"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "SHAP Feature Importance -  Toronto"
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "selectionColor"
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "avg(mean_shap)",
+                  "displayName": "Avg Mean Shap",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "feature",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 1,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "5c0f3d8b",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "84f96b79",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "hour",
+                      "expression": "`hour`"
+                    },
+                    {
+                      "name": "sum(shap_value)",
+                      "expression": "SUM(`shap_value`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "title": "SHAP Hour Dependency Plot",
+                "showTitle": true
+              },
+              "widgetType": "scatter",
+              "encodings": {
+                "x": {
+                  "fieldName": "hour",
+                  "displayName": "Hour",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(shap_value)",
+                  "displayName": "SHAP Value",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "city",
+                  "legend": {
+                    "position": "bottom"
+                  },
+                  "displayName": "City",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "Toronto",
+                        "color": {
+                          "themeColorType": "selectionColor"
+                        }
+                      },
+                      {
+                        "value": "NYC",
+                        "color": "#D5C943"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 9,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "cde9927f",
+            "multilineTextboxSpec": {
+              "lines": [
+                "### <span style=\"text-align:center;display:block;\">SHAP Feature Importance</span>\n",
+                "\n",
+                "<span style=\"font-size:18px\">Toronto delay risk is primarily driven by spatial factors, while NYC is more influenced by incident type. Temporal and demand variables are important in both cities, though their impact varies. This highlights that delay risk is multi-dimensional and differs structurally across cities.</span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 7,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "3da89b05",
+            "multilineTextboxSpec": {
+              "lines": [
+                "### <span style=\"text-align:center;display:block;\">Temporal Driver - Hour</span>\n",
+                "\n",
+                "<span style=\"text-align:justify;display:block\"><span style=\"font-size:18px\">Delay risk increases during peak hours, as shown by higher SHAP values, indicating congestion-driven effects. This pattern is consistent across both cities, though the strength of impact varies, reflecting city-specific operational dynamics.</span></span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 15,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "55704b34",
+            "multilineTextboxSpec": {
+              "lines": [
+                "### <span style=\"text-align:center;display:block\">SHAP Summary Plot (Beeswarm)</span>\n",
+                "\n",
+                "<span style=\"text-align:justify;display:block;\"><span style=\"font-size: 18px;\">Toronto’s delay risk is predominantly driven by spatial and temporal factors, with location\\_area and hour showing the widest SHAP spread, indicating strong variability across regions and time-of-day conditions.In contrast, NYC exhibits a more incident-driven structure, where incident\\_category dominates, while demand and temporal features contribute consistently but with comparatively lower magnitude than Toronto’s spatial effects.</span></span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 26,
+            "width": 12,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "64d8d7bc",
+            "multilineTextboxSpec": {
+              "lines": [
+                "![](https://github.com/EmmaAye/DAMO_699-4-Capstone-Project/blob/main/output/shap/toronto/toronto_shap_summary_pretty_top15.png?raw=false)"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 17,
+            "width": 6,
+            "height": 9
+          }
+        },
+        {
+          "widget": {
+            "name": "cc4a7c52",
+            "multilineTextboxSpec": {
+              "lines": [
+                "![](https://github.com/EmmaAye/DAMO_699-4-Capstone-Project/blob/main/output/shap/nyc/nyc_shap_summary_pretty_top15.png?raw=true)"
+              ]
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 17,
+            "width": 6,
+            "height": 9
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "43d86314",
+      "displayName": "Survival Analysis",
+      "layout": [
+        {
+          "widget": {
+            "name": "455f4146",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<span style=\"text-align:center;display:block;\">![](https://github.com/EmmaAye/DAMO_699-4-Capstone-Project/blob/CAPP-14_CAPP-103_CAPP-104_CAPP-105_executive_overview_eda_dashboard/output/graphs/final_km_baseline_toronto_vs_nyc.png?raw=false)</span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 5,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "46e173ee",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "7da26c8f",
+                  "fields": [
+                    {
+                      "name": "city",
+                      "expression": "`city`"
+                    },
+                    {
+                      "name": "hr",
+                      "expression": "`hr`"
+                    },
+                    {
+                      "name": "feature",
+                      "expression": "`feature`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "annotations": [
+                {
+                  "type": "vertical-line",
+                  "encodings": {
+                    "x": {
+                      "dataValue": "1",
+                      "dataType": "DOUBLE"
+                    },
+                    "color": {
+                      "value": "#A00909"
+                    }
+                  }
+                }
+              ],
+              "frame": {
+                "showTitle": true,
+                "title": "Hazard Ratio Comparison of Response Drivers (HR = 1 = Neutral Baseline)",
+                "showDescription": false,
+                "description": ""
+              },
+              "mark": {
+                "layout": "stack"
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "hr",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "feature",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  }
+                },
+                "color": {
+                  "fieldName": "city",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "NYC",
+                        "color": "#D8ED52"
+                      },
+                      {
+                        "value": "Toronto",
+                        "color": {
+                          "themeColorType": "selectionColor"
+                        }
+                      }
+                    ]
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 9,
+            "width": 10,
+            "height": 9
+          }
+        },
+        {
+          "widget": {
+            "name": "b904dd02",
+            "multilineTextboxSpec": {
+              "lines": [
+                "### Log-rank Test Summary (Within-City Factors)\n",
+                "\n",
+                "**Toronto:**\n",
+                "\n",
+                "- **Hour** → Significant (p < 0.001), Highest delay: Night  \n",
+                "- **Season** → Significant (p < 0.001), Highest delay: Summer  \n",
+                "-  **Day of Week&#32;** → Significant (p < 0.001), Highest delay: Wednesday  \n",
+                "\n",
+                "**NYC:**\n",
+                "\n",
+                "- **Hour&#32;** → Significant (p < 0.001), Highest delay: Night  \n",
+                "- **Season&#32;** → Significant (p < 0.001), Highest delay: Summer  \n",
+                "- **Day of Week** → Significant (p < 0.001), Highest delay: Wednesday  "
+              ]
+            }
+          },
+          "position": {
+            "x": 5,
+            "y": 4,
+            "width": 5,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "e10d2c14",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<span style=\"text-align:center;display:block;\"><span style=\"font-size: 24px;color: #FFAB00;\">**Survival Analysis**</span></span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 10,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "8311e559",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "0b4a1a86",
+                  "fields": [
+                    {
+                      "name": "City",
+                      "expression": "`City`"
+                    },
+                    {
+                      "name": "Median (min)",
+                      "expression": "`Median (min)`"
+                    },
+                    {
+                      "name": "S(5 min) %",
+                      "expression": "`S(5 min) %`"
+                    },
+                    {
+                      "name": "S(10 min) %",
+                      "expression": "`S(10 min) %`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "City"
+                  },
+                  {
+                    "fieldName": "Median (min)"
+                  },
+                  {
+                    "fieldName": "S(5 min) %"
+                  },
+                  {
+                    "fieldName": "S(10 min) %"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 5,
+            "y": 1,
+            "width": 5,
+            "height": 3
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "0f41acff",
+      "displayName": "Key Insights & Analytical Contribution",
+      "layout": [
+        {
+          "widget": {
+            "name": "626c2da0",
+            "multilineTextboxSpec": {
+              "lines": [
+                "1. Analytical Contribution\n",
+                "\n",
+                "A short section clearly stating how this study extends traditional response-time evaluation by:\n",
+                "\n",
+                "- Emphasizing tail-risk metrics rather than averages\n",
+                "- Integrating survival analysis with statistical testing\n",
+                "- Combining predictive modeling with explainable AI\n",
+                "- Enabling structured cross-city comparison\n",
+                "\n",
+                "This section should explicitly differentiate the methodology from conventional descriptive approaches.\n",
+                "\n",
+                "2. Structural Performance Differences\n",
+                "\n",
+                "Combine:\n",
+                "\n",
+                "- Cross-City Performance Summary\n",
+                "- Log-rank statistical support\n",
+                "- Central vs tail differences\n",
+                "\n",
+                "Everything about “which city performs differently” lives here\n",
+                "\n",
+                "3. When & Where Risk Concentrates\n",
+                "\n",
+                "Combine:\n",
+                "\n",
+                "- Temporal Risk Insights\n",
+                "- Spatial & Operational Insights\n",
+                "- Time + location are both structural context.<br>They belong together. \n",
+                "\n",
+                "4. Delay Drivers & System Interpretation\n",
+                "\n",
+                "Combine:\n",
+                "\n",
+                "- Model-based delay drivers\n",
+                "- SHAP insights\n",
+                "- Operational interpretation\n",
+                "\n",
+                "Put drivers + meaning together.This avoids separating “drivers” and “implications” artificially."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 10,
+            "height": 13
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "b6b91bf4",
+      "displayName": "Global Filters",
+      "layout": [
+        {
+          "widget": {
+            "name": "c060cf38",
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-single-select",
+              "encodings": {},
+              "frame": {
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "canvasBackgroundColor": {
+        "light": "#FAFAFB",
+        "dark": "#1F272D"
+      },
+      "widgetBackgroundColor": {
+        "light": "#B4CFCE",
+        "dark": "#1A2B56"
+      },
+      "fontColor": {
+        "light": "#11171C",
+        "dark": "#E8ECF0"
+      },
+      "selectionColor": {
+        "light": "#2272B4",
+        "dark": "#8ACAFF"
+      },
+      "visualizationColors": [
+        "#1A2B56"
+      ],
+      "widgetHeaderAlignment": "LEFT"
+    },
+    "genieSpace": {
+      "isEnabled": true,
+      "enablementMode": "ENABLED"
+    },
+    "applyModeEnabled": false
+  }
+}

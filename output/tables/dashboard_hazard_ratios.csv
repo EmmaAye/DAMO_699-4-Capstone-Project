@@ -1,0 +1,43 @@
+Feature,Hazard_Ratio,City
+calls_past_30min,1.0004985207306363,NYC
+calls_past_60min,1.0009705109196347,NYC
+day_of_week_2,1.019886543768017,NYC
+day_of_week_7,1.0150519107899583,NYC
+day_of_week_3,1.0001073157386264,NYC
+day_of_week_1,1.0362784093825443,NYC
+day_of_week_4,0.9871260724326809,NYC
+day_of_week_5,0.9948851564940604,NYC
+season_fall,1.0333697370603625,NYC
+season_spring,1.0280366161678793,NYC
+season_winter,1.0266282908466962,NYC
+incident_category_Other / Assistance,2.105853788026966,NYC
+incident_category_Hazardous / Utility,3.000624320952205,NYC
+incident_category_False Alarm / No Action,3.03554861031692,NYC
+incident_category_Rescue / Entrapment,2.1532110069718553,NYC
+incident_category_Fire – Structural,4.631176396690323,NYC
+incident_category_Fire – Non-Structural,3.4671238595224434,NYC
+unified_alarm_level_2,2.0705643012170425,NYC
+time_bin_Evening,1.0540373018741507,NYC
+time_bin_Morning,0.9585465170636934,NYC
+time_bin_Night,0.8685391380801919,NYC
+calls_past_30min,0.887043700607913,Toronto
+calls_past_60min,1.0495324957819303,Toronto
+day_of_week_7,1.0021401661316542,Toronto
+day_of_week_4,0.9843890186300192,Toronto
+day_of_week_5,0.9801208660205419,Toronto
+day_of_week_3,0.9846051609400246,Toronto
+day_of_week_2,1.0244775504002808,Toronto
+day_of_week_1,1.0514506987904004,Toronto
+season_fall,1.017657278292009,Toronto
+season_spring,1.0300650978376658,Toronto
+season_winter,1.0103114550549783,Toronto
+incident_category_False Alarm / No Action,0.5920754828754327,Toronto
+incident_category_Other / Assistance,0.7658605594848866,Toronto
+incident_category_Fire – Non-Structural,1.0272145670535249,Toronto
+incident_category_Rescue / Entrapment,0.8158088985279154,Toronto
+incident_category_Hazardous / Utility,0.7151161700364025,Toronto
+incident_category_Fire – Structural,0.9525096636375557,Toronto
+unified_alarm_level_2,1.2391146102719042,Toronto
+time_bin_Evening,1.0240119048408036,Toronto
+time_bin_Morning,1.0132968660901611,Toronto
+time_bin_Night,0.7864339715293068,Toronto
