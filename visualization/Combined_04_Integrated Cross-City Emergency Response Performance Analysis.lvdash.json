@@ -1219,7 +1219,7 @@
           },
           "position": {
             "x": 0,
-            "y": 1,
+            "y": 2,
             "width": 6,
             "height": 5
           }
@@ -1286,7 +1286,7 @@
           },
           "position": {
             "x": 6,
-            "y": 1,
+            "y": 2,
             "width": 6,
             "height": 5
           }
@@ -1377,7 +1377,7 @@
           },
           "position": {
             "x": 0,
-            "y": 6,
+            "y": 7,
             "width": 4,
             "height": 5
           }
@@ -1503,9 +1503,185 @@
           },
           "position": {
             "x": 4,
-            "y": 6,
+            "y": 7,
             "width": 8,
             "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "year-filter",
+            "queries": [
+              {
+                "name": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19dab810537a0df3402d_year",
+                "query": {
+                  "datasetName": "ac05473d",
+                  "fields": [
+                    {
+                      "name": "year",
+                      "expression": "`year`"
+                    },
+                    {
+                      "name": "year_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19b5951b55b5df31b142_year",
+                "query": {
+                  "datasetName": "b82b9527",
+                  "fields": [
+                    {
+                      "name": "year",
+                      "expression": "`year`"
+                    },
+                    {
+                      "name": "year_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19d58a734585cfaedcfd_year",
+                "query": {
+                  "datasetName": "25a85096",
+                  "fields": [
+                    {
+                      "name": "year",
+                      "expression": "`year`"
+                    },
+                    {
+                      "name": "year_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Year Filter",
+                "showTitle": true
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "year",
+                    "queryName": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19dab810537a0df3402d_year"
+                  },
+                  {
+                    "fieldName": "year",
+                    "queryName": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19b5951b55b5df31b142_year"
+                  },
+                  {
+                    "fieldName": "year",
+                    "queryName": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19d58a734585cfaedcfd_year"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 6,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "month-filter",
+            "queries": [
+              {
+                "name": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19dab810537a0df3402d_month",
+                "query": {
+                  "datasetName": "ac05473d",
+                  "fields": [
+                    {
+                      "name": "month",
+                      "expression": "`month`"
+                    },
+                    {
+                      "name": "month_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19b5951b55b5df31b142_month",
+                "query": {
+                  "datasetName": "b82b9527",
+                  "fields": [
+                    {
+                      "name": "month",
+                      "expression": "`month`"
+                    },
+                    {
+                      "name": "month_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19d58a734585cfaedcfd_month",
+                "query": {
+                  "datasetName": "25a85096",
+                  "fields": [
+                    {
+                      "name": "month",
+                      "expression": "`month`"
+                    },
+                    {
+                      "name": "month_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Month Filter",
+                "showTitle": true
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "month",
+                    "queryName": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19dab810537a0df3402d_month"
+                  },
+                  {
+                    "fieldName": "month",
+                    "queryName": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19b5951b55b5df31b142_month"
+                  },
+                  {
+                    "fieldName": "month",
+                    "queryName": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19d58a734585cfaedcfd_month"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 1,
+            "width": 6,
+            "height": 1
           }
         }
       ],
@@ -1607,7 +1783,7 @@
           },
           "position": {
             "x": 0,
-            "y": 1,
+            "y": 2,
             "width": 6,
             "height": 6
           }
@@ -1687,7 +1863,7 @@
           },
           "position": {
             "x": 6,
-            "y": 1,
+            "y": 2,
             "width": 6,
             "height": 6
           }
@@ -1776,7 +1952,7 @@
           },
           "position": {
             "x": 0,
-            "y": 7,
+            "y": 8,
             "width": 7,
             "height": 6
           }
@@ -1875,7 +2051,7 @@
           },
           "position": {
             "x": 0,
-            "y": 13,
+            "y": 14,
             "width": 12,
             "height": 6
           }
@@ -1974,9 +2150,185 @@
           },
           "position": {
             "x": 7,
-            "y": 7,
+            "y": 8,
             "width": 5,
             "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "year-filter",
+            "queries": [
+              {
+                "name": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19dab810537a0df3402d_year",
+                "query": {
+                  "datasetName": "ac05473d",
+                  "fields": [
+                    {
+                      "name": "year",
+                      "expression": "`year`"
+                    },
+                    {
+                      "name": "year_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19b5951b55b5df31b142_year",
+                "query": {
+                  "datasetName": "b82b9527",
+                  "fields": [
+                    {
+                      "name": "year",
+                      "expression": "`year`"
+                    },
+                    {
+                      "name": "year_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19d58a734585cfaedcfd_year",
+                "query": {
+                  "datasetName": "25a85096",
+                  "fields": [
+                    {
+                      "name": "year",
+                      "expression": "`year`"
+                    },
+                    {
+                      "name": "year_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Year Filter",
+                "showTitle": true
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "year",
+                    "queryName": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19dab810537a0df3402d_year"
+                  },
+                  {
+                    "fieldName": "year",
+                    "queryName": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19b5951b55b5df31b142_year"
+                  },
+                  {
+                    "fieldName": "year",
+                    "queryName": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19d58a734585cfaedcfd_year"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 6,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "month-filter",
+            "queries": [
+              {
+                "name": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19dab810537a0df3402d_month",
+                "query": {
+                  "datasetName": "ac05473d",
+                  "fields": [
+                    {
+                      "name": "month",
+                      "expression": "`month`"
+                    },
+                    {
+                      "name": "month_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19b5951b55b5df31b142_month",
+                "query": {
+                  "datasetName": "b82b9527",
+                  "fields": [
+                    {
+                      "name": "month",
+                      "expression": "`month`"
+                    },
+                    {
+                      "name": "month_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19d58a734585cfaedcfd_month",
+                "query": {
+                  "datasetName": "25a85096",
+                  "fields": [
+                    {
+                      "name": "month",
+                      "expression": "`month`"
+                    },
+                    {
+                      "name": "month_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "Month Filter",
+                "showTitle": true
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "month",
+                    "queryName": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19dab810537a0df3402d_month"
+                  },
+                  {
+                    "fieldName": "month",
+                    "queryName": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19b5951b55b5df31b142_month"
+                  },
+                  {
+                    "fieldName": "month",
+                    "queryName": "dashboards/01f125ac4b311f85b63ea0f168a05e07/datasets/01f125b028fd19d58a734585cfaedcfd_month"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 1,
+            "width": 6,
+            "height": 1
           }
         }
       ],
@@ -3363,7 +3715,7 @@
             "x": 0,
             "y": 26,
             "width": 12,
-            "height": 3
+            "height": 2
           }
         },
         {
@@ -3678,27 +4030,6 @@
     {
       "name": "b6b91bf4",
       "displayName": "Global Filters",
-      "layout": [
-        {
-          "widget": {
-            "name": "c060cf38",
-            "spec": {
-              "version": 2,
-              "widgetType": "filter-single-select",
-              "encodings": {},
-              "frame": {
-                "showTitle": true
-              }
-            }
-          },
-          "position": {
-            "x": 0,
-            "y": 0,
-            "width": 1,
-            "height": 2
-          }
-        }
-      ],
       "pageType": "PAGE_TYPE_GLOBAL_FILTERS",
       "layoutVersion": "GRID_V1"
     }
