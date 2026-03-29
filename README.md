@@ -3,18 +3,19 @@
 
 ## Overview
 
-This capstone project develops a data-driven framework to analyze and predict emergency response-time delay risk in large metropolitan fire services. Using dispatch and incident data from **Toronto** and **New York City**, the project applies survival analysis and predictive modeling to quantify delay risk, identify key drivers, and compare response-time structures across cities.
+This capstone project develops a data-driven framework to analyze, compare, and predict emergency response-time delay risk in large metropolitan fire services. Using dispatch and incident data from Toronto and New York City, the project combines survival analysis and predictive modeling to quantify delay risk, identify key operational drivers, and examine whether response-time structures are consistent across cities.
 
-Rather than focusing solely on average response times, this project emphasizes **tail-risk behavior**—the probability that response times exceed critical service thresholds. This provides a more realistic and operationally meaningful measure of service reliability.
+Rather than focusing only on average response times, the project emphasizes tail-risk behavior,the probability that response times exceed critical service thresholds. In addition, predictive models are used to estimate the likelihood of delays based on temporal, demand-related, and incident-level factors. Together, these approaches provide a more realistic and operationally meaningful view of service reliability.y.
 
 ---
 
 ## Objectives
 
-- Quantify emergency response delay risk using survival analysis  
+- Quantify emergency response delay risk using survival analysis
+- Build predictive models to estimate the likelihood of response delays
 - Identify temporal and demand-related drivers of delays  
 - Compare response-time survival patterns across Toronto and NYC  
-- Evaluate predictive drivers of delay risk  
+- Evaluate the relative importance of predictive drivers of delay risk
 - Reveal tail-risk patterns not visible in average-based reporting  
 
 ---
@@ -40,6 +41,12 @@ Do survival-based delay probabilities reveal risks not captured by average respo
 
 ## Methodology
 
+### Predictive Modeling
+
+* Classification models (Logistic Regression, Random Forest, Gradient Boosted Trees (GBTClassifier))to estimate delay likelihood
+* Model evaluation using performance metrics such as AUC, precision, recall, and F1-score
+* Comparative analysis of predictive drivers across cities
+
 ### Survival Analysis
 - Kaplan–Meier survival curves (baseline and stratified)
 - Log-rank tests for group comparison
@@ -59,6 +66,7 @@ Do survival-based delay probabilities reveal risks not captured by average respo
 
 ## Key Outputs
 
+- Predictive models for delay classification
 - Baseline and stratified survival curves
 - Cross-city delay-risk comparison
 - Hazard ratio estimates for predictive factors
@@ -69,7 +77,7 @@ Do survival-based delay probabilities reveal risks not captured by average respo
 
 ## Tools & Technologies
 
-- Python (Pandas, NumPy, Matplotlib)
+- Python (Pandas, NumPy, Matplotlib, Scikit-learn)
 - PySpark / Databricks
 - Lifelines (survival analysis)
 - SQL
